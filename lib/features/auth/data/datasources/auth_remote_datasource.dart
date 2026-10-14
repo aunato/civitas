@@ -1,0 +1,161 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/constants/firebase_constants.dart';
+import '../../../../core/errors/exceptions.dart';
+import '../models/user_model.dart';
+
+abstract class AuthRemoteDataSource {
+  Stream<UserModel?> get authStateChanges;
+  Future<UserModel> signInWithEmailAndPassword({required String email, required String password});
+  Future<UserModel> registerWithEmailAndPassword({required String email, required String password, required String rol});
+  Future<UserModel?> getCurrentUser();
+  Future<void> signOut();
+  Future<void> updateFcmToken(String uid, String token);
+}
+
+class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
+  final FirebaseAuth firebaseAuth;
+  final FirebaseFirestore firestore;
+
+  AuthRemoteDataSourceImpl({
+    FirebaseAuth? firebaseAuth,
+    FirebaseFirestore? firestore,
+  })  : firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
+        firestore = firestore ?? FirebaseFirestore.instance;
+
+  @override
+  Stream<UserModel?> get authStateChanges {
+    return firebaseAuth.authStateChanges().asyncMap((firebaseUser) async {
+      if (firebaseUser == null) return null;
+      try {
+        final doc = await firestore
+            .collection(FirebaseConstants.colUsuarios)
+            .doc(firebaseUser.uid)
+            .get();
+        if (doc.exists) {
+          return UserModel.fromFirestore(doc);
+        }
+        return UserModel(
+          uid: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          rol: FirebaseConstants.rolVecino,
+          reputacion: 100,
+        );
+      } catch (_) {
+        return UserModel(
+          uid: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          rol: FirebaseConstants.rolVecino,
+          reputacion: 100,
+        );
+      }
+    });
+  }
+
+  @override
+  Future<UserModel> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await firebaseAuth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = credential.user;
+      if (user == null) {
+        throw AuthException('No se pudo obtener información del usuario.');
+      }
+
+      final doc = await firestore
+          .collection(FirebaseConstants.colUsuarios)
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists) {
+        // Inicializar documento por defecto si no existiera
+        final newUser = UserModel(
+          uid: user.uid,
+          email: user.email ?? email,
+          rol: FirebaseConstants.rolVecino,
+          reputacion: 100,
+        );
+        await firestore
+            .collection(FirebaseConstants.colUsuarios)
+            .doc(user.uid)
+            .set(newUser.toFirestore());
+        return newUser;
+      }
+
+      return UserModel.fromFirestore(doc);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.message ?? 'Error de autenticación');
+    } catch (e) {
+      throw ServerException('Error al iniciar sesión: $e');
+    }
+  }
+
+  @override
+  Future<UserModel> registerWithEmailAndPassword({
+    required String email,
+    required String password,
+    required String rol,
+  }) async {
+    try {
+      final credential = await firebaseAuth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final user = credential.user;
+      if (user == null) {
+        throw AuthException('No se pudo registrar al usuario.');
+      }
+
+      final newUser = UserModel(
+        uid: user.uid,
+        email: email,
+        rol: rol,
+        reputacion: 100, // Reputación inicial 100
+      );
+
+      await firestore
+          .collection(FirebaseConstants.colUsuarios)
+          .doc(user.uid)
+          .set(newUser.toFirestore());
+
+      return newUser;
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.message ?? 'Error al registrar usuario');
+    } catch (e) {
+      throw ServerException('Error en el servidor al registrar: $e');
+    }
+  }
+
+  @override
+  Future<UserModel?> getCurrentUser() async {
+    final current = firebaseAuth.currentUser;
+    if (current == null) return null;
+
+    final doc = await firestore
+        .collection(FirebaseConstants.colUsuarios)
+        .doc(current.uid)
+        .get();
+
+    if (!doc.exists) return null;
+    return UserModel.fromFirestore(doc);
+  }
+
+  @override
+  Future<void> signOut() async {
+    await firebaseAuth.signOut();
+  }
+
+  @override
+  Future<void> updateFcmToken(String uid, String token) async {
+    await firestore.collection(FirebaseConstants.colUsuarios).doc(uid).update({
+      'fcm_token': token,
+    });
+  }
+}

@@ -1,0 +1,44 @@
+name: Compilar APK CIVITAS (Release)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Compilar APK Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17 (JDK Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurar Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Obtener Dependencias
+        run: flutter pub get
+
+      - name: Ejecutar Suite de Pruebas Unitarias
+        run: flutter test
+
+      - name: Compilar APK en Modo Release
+        run: flutter build apk --release
+
+      - name: Publicar Artefacto Descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: civitas-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30

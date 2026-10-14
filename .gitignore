@@ -1,0 +1,25 @@
+# Archivos de compilación de Flutter y Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Archivos de entorno y credenciales sensibles (¡CRÍTICO: no versionar llaves de producción!)
+*.env
+# android/app/google-services.json # Descomentar en repositorios públicos si contiene credenciales de producción
+
+# Archivos de IDE y sistema
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Android
+android/**/gradle-wrapper.jar
+android/.gradle
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties

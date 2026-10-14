@@ -1,0 +1,37 @@
+name: civitas
+description: "CIVITAS - Plataforma móvil comunitaria de seguridad ciudadana y alerta temprana."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # --- Núcleo Firebase (Versiones compatibles con Firebase BoM 33.x) ---
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.1
+  firebase_messaging: ^15.1.6
+
+  # --- Servicios de Geolocalización y Mapas ---
+  google_maps_flutter: ^2.10.0
+  geolocator: ^13.0.2
+
+  # --- UI y Componentes Visuales ---
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
