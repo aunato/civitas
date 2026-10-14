@@ -60,12 +60,20 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     _locationService = widget.locationService ?? LocationService.instance;
 
-    final reportesRemote = ReportesRemoteDataSourceImpl();
-    final reportesRepo = ReportesRepositoryImpl(remoteDataSource: reportesRemote);
+    if (widget.getReportesUseCase != null &&
+        widget.crearReporteUseCase != null &&
+        widget.validarReporteUseCase != null) {
+      _getReportesUseCase = widget.getReportesUseCase!;
+      _crearReporteUseCase = widget.crearReporteUseCase!;
+      _validarReporteUseCase = widget.validarReporteUseCase!;
+    } else {
+      final reportesRemote = ReportesRemoteDataSourceImpl();
+      final reportesRepo = ReportesRepositoryImpl(remoteDataSource: reportesRemote);
 
-    _getReportesUseCase = widget.getReportesUseCase ?? GetReportesCercanosUseCase(reportesRepo);
-    _crearReporteUseCase = widget.crearReporteUseCase ?? CrearReporteUseCase(reportesRepo);
-    _validarReporteUseCase = widget.validarReporteUseCase ?? ValidarReporteUseCase(reportesRepo);
+      _getReportesUseCase = widget.getReportesUseCase ?? GetReportesCercanosUseCase(reportesRepo);
+      _crearReporteUseCase = widget.crearReporteUseCase ?? CrearReporteUseCase(reportesRepo);
+      _validarReporteUseCase = widget.validarReporteUseCase ?? ValidarReporteUseCase(reportesRepo);
+    }
   }
 
   /// Recentra el mapa automáticamente en la posición del usuario usando el LocationService
