@@ -83,6 +83,7 @@ class LocationService implements ILocationService {
   }
 
   /// Método estático auxiliar para compatibilidad retroactiva
+  static Future<Position> getCurrentLocation() => instance.getCurrentLocation();
   static Future<Position> getLocationStatic() => instance.getCurrentLocation();
 
   /// Calcula la distancia en metros entre dos coordenadas geodésicas

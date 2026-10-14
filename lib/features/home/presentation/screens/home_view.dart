@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/firebase_constants.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/data/datasources/auth_remote_datasource.dart';
@@ -396,7 +397,7 @@ class _HomeViewState extends State<HomeView> {
                     // Chip de alertas activas
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      margin: const EdgeInsets.bottom(12),
+                      margin: const EdgeInsets.only(bottom: 12),
                       decoration: BoxDecoration(
                         color: AppColors.primaryDark.withOpacity(0.9),
                         borderRadius: BorderRadius.circular(16),
