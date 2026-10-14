@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/usecases/login_usecase.dart';
@@ -79,7 +80,11 @@ class _LoginViewState extends State<LoginView> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+        if (e is AuthException) {
+          _errorMessage = e.message;
+        } else {
+          _errorMessage = e.toString().replaceAll('AuthException: ', '').replaceAll('Exception: ', '');
+        }
         _isLoading = false;
       });
     }

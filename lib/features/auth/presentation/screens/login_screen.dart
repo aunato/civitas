@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/errors/exceptions.dart';
 import '../widgets/auth_text_field.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -68,7 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        if (e is AuthException) {
+          _errorMessage = e.message;
+        } else {
+          _errorMessage = e.toString().replaceAll('AuthException: ', '').replaceAll('Exception: ', '');
+        }
         _isLoading = false;
       });
     }
