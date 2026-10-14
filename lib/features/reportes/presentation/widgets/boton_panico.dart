@@ -29,7 +29,7 @@ class _BotonPanicoState extends State<BotonPanico> {
 
     try {
       // HU-03: Detección automática de ubicación GPS al reportar
-      final position = await LocationService.getCurrentLocation();
+      final position = await LocationService.instance.getCurrentLocation();
 
       // HU-02: Envío inmediato en menos de 3 segundos
       await widget.crearReporteUseCase.dispararBotonPanico(
