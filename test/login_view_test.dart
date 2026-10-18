@@ -111,7 +111,10 @@ void main() {
       await tester.enterText(find.byKey(const Key('login_email_field')), 'nuevo.vecino@civitas.cl');
       await tester.enterText(find.byKey(const Key('login_password_field')), 'clave123');
       await tester.enterText(find.byKey(const Key('register_confirm_password_field')), 'distinta123');
-      await tester.tap(find.byKey(const Key('login_submit_button')));
+      
+      final submitButton = find.byKey(const Key('login_submit_button'));
+      await tester.ensureVisible(submitButton);
+      await tester.tap(submitButton);
       await tester.pumpAndSettle();
 
       expect(find.text('Las contraseñas no coinciden'), findsOneWidget);
@@ -125,14 +128,17 @@ void main() {
       expect(find.text('¿No tienes cuenta? Regístrate aquí'), findsOneWidget);
 
       // Tocar enlace inferior para alternar a registro
-      await tester.tap(find.byKey(const Key('auth_toggle_mode_button')));
+      final toggleButton = find.byKey(const Key('auth_toggle_mode_button'));
+      await tester.ensureVisible(toggleButton);
+      await tester.tap(toggleButton);
       await tester.pumpAndSettle();
 
       expect(find.text('Registro Vecinal'), findsOneWidget);
       expect(find.text('¿Ya tienes una cuenta? Inicia sesión aquí'), findsOneWidget);
 
       // Tocar enlace inferior para volver a login
-      await tester.tap(find.byKey(const Key('auth_toggle_mode_button')));
+      await tester.ensureVisible(toggleButton);
+      await tester.tap(toggleButton);
       await tester.pumpAndSettle();
 
       expect(find.text('Ingreso Vecinal'), findsOneWidget);
