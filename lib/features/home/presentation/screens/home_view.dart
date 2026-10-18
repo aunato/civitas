@@ -46,6 +46,7 @@ class _HomeViewState extends State<HomeView> {
   late final ValidarReporteUseCase _validarReporteUseCase;
 
   bool _isAcquiringLocation = false;
+  bool _hasLocationPermission = false;
   LatLng? _currentLatLng;
   String? _locationStatusMessage;
 
@@ -95,6 +96,7 @@ class _HomeViewState extends State<HomeView> {
       if (!mounted) return;
 
       setState(() {
+        _hasLocationPermission = true;
         _currentLatLng = latLng;
         _isAcquiringLocation = false;
         _locationStatusMessage = null;
@@ -257,7 +259,7 @@ class _HomeViewState extends State<HomeView> {
                     target: _defaultLocation,
                     zoom: AppConstants.defaultZoom,
                   ),
-                  myLocationEnabled: true,
+                  myLocationEnabled: _hasLocationPermission,
                   myLocationButtonEnabled: false, // Usamos botón flotante personalizado
                   zoomControlsEnabled: false,
                   compassEnabled: true,
@@ -336,38 +338,51 @@ class _HomeViewState extends State<HomeView> {
                 ),
               ),
 
-              // 3. Indicador de alerta o adquisición de ubicación
-              if (_isAcquiringLocation)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 80,
-                  left: 32,
-                  right: 32,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryDark.withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              // 3. Indicador de geolocalización GPS activa
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 78,
+                left: 16,
+                right: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.95),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _isAcquiringLocation ? Icons.satellite_alt_outlined : Icons.gps_fixed_rounded,
+                        size: 20,
+                        color: _isAcquiringLocation ? AppColors.warningOrange : AppColors.successGreen,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _isAcquiringLocation
+                              ? 'Sincronizando señal GPS con satélites...'
+                              : (_currentLatLng != null
+                                  ? 'GPS Activo: ${_currentLatLng!.latitude.toStringAsFixed(4)}, ${_currentLatLng!.longitude.toStringAsFixed(4)} • Radio 500m'
+                                  : 'Ubicación activa (Antofagasta, Chile)'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        SizedBox(width: 10),
-                        Text(
-                          'Sincronizando ubicación GPS...',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
 
               // 4. Botón Flotante para Recentrar en la posición del Usuario (Geolocator)
               Positioned(

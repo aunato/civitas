@@ -24,6 +24,8 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
+def mapsApiKey = project.findProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: "REEMPLAZAR_CON_TU_GOOGLE_MAPS_API_KEY"
+
 android {
     namespace "com.civitas.app"
     compileSdk 36
@@ -49,6 +51,10 @@ android {
 
         // multiDexEnabled requerido para proyectos con múltiples servicios de Google Play y Firebase
         multiDexEnabled true
+
+        manifestPlaceholders = [
+            mapsApiKey: mapsApiKey
+        ]
     }
 
     signingConfigs {
