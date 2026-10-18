@@ -53,8 +53,7 @@ android {
         multiDexEnabled true
 
         manifestPlaceholders += [
-            mapsApiKey: mapsApiKey,
-            applicationName: "io.flutter.app.FlutterApplication"
+            mapsApiKey: mapsApiKey
         ]
     }
 
