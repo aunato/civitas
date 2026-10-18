@@ -26,6 +26,41 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Configurar Keystore Fijo para Release y Firebase
+        run: |
+          if [ ! -f android/app/civitas.keystore ]; then
+            echo "Generando keystore fijo de release para CIVITAS..."
+            keytool -genkeypair -v \
+              -keystore android/app/civitas.keystore \
+              -alias civitas \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass civitas123 \
+              -keypass civitas123 \
+              -dname "CN=CIVITAS, OU=Seguridad, O=Vecinos, L=Antofagasta, ST=Antofagasta, C=CL"
+            
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add android/app/civitas.keystore
+            git commit -m "chore(keystore): guardar keystore fijo para Firebase SHA-1 [skip ci]" || true
+            git push origin main || true
+          fi
+
+          echo "Extrayendo huellas digitales SHA-1 y SHA-256..."
+          KEYTOOL_OUT=$(keytool -list -v -keystore android/app/civitas.keystore -storepass civitas123 -alias civitas)
+          SHA1_FINGERPRINT=$(echo "$KEYTOOL_OUT" | grep "SHA1:" | head -n 1 | awk '{print $2}')
+          SHA256_FINGERPRINT=$(echo "$KEYTOOL_OUT" | grep "SHA256:" | head -n 1 | awk '{print $2}')
+          
+          echo "SHA1=$SHA1_FINGERPRINT" >> $GITHUB_ENV
+          echo "SHA256=$SHA256_FINGERPRINT" >> $GITHUB_ENV
+          
+          echo "=========================================="
+          echo "CIVITAS RELEASE KEYSTORE FINGERPRINTS"
+          echo "SHA-1:   $SHA1_FINGERPRINT"
+          echo "SHA-256: $SHA256_FINGERPRINT"
+          echo "=========================================="
+
       - name: Configurar Flutter SDK
         uses: subosito/flutter-action@v2
         with:
@@ -57,4 +92,17 @@ jobs:
           git push --delete origin v1.0.0 || true
           gh release create v1.0.0 build/app/outputs/flutter-apk/app-release.apk \
             --title "CIVITAS APK v1.0.0 (Instalador Android)" \
-            --notes "Descarga directa de CIVITAS APK para instalar y probar en tu celular Android. Abre el archivo app-release.apk en tu teléfono para instalar la aplicación."
+            --notes "### Descarga directa de CIVITAS APK
+          Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
+
+          ---
+          ### Huellas Digitales del Certificado de Firma (Keystore Release)
+          * **Package Name:** \`com.civitas.app\`
+          * **Huella Digital SHA-1:** \`${{ env.SHA1 }}\`
+          * **Huella Digital SHA-256:** \`${{ env.SHA256 }}\`
+
+          > **Instrucciones para Firebase Console:**
+          > 1. Ve a tu proyecto en [Firebase Console](https://console.firebase.google.com/).
+          > 2. Entra a **Configuración del proyecto > General > Tus apps > Android (com.civitas.app)**.
+          > 3. Toca **Agregar huella digital** y pega el SHA-1 indicado arriba (\`${{ env.SHA1 }}\`).
+          > 4. Descarga tu archivo \`google-services.json\` oficial y colócalo en la carpeta \`android/app/\` del proyecto."

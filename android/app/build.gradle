@@ -51,9 +51,26 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs {
+        release {
+            if (file("civitas.keystore").exists()) {
+                storeFile file("civitas.keystore")
+                storePassword "civitas123"
+                keyAlias "civitas"
+                keyPassword "civitas123"
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+    }
+
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            if (file("civitas.keystore").exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             minifyEnabled false
             shrinkResources false
         }

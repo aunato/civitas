@@ -104,10 +104,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return UserModel.fromFirestore(doc);
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'invalid-api-key' ||
+      final isConfigOrNetworkError = e.code == 'invalid-api-key' ||
           e.code == 'app-not-authorized' ||
           e.code == 'network-request-failed' ||
-          e.code == 'internal-error') {
+          e.code == 'internal-error' ||
+          e.code == 'unknown' ||
+          (e.message != null && (
+              e.message!.contains('API key not valid') ||
+              e.message!.contains('api-key') ||
+              e.message!.contains('internal error') ||
+              e.message!.contains('network') ||
+              e.message!.contains('blocked')
+          ));
+      if (isConfigOrNetworkError) {
         return UserModel(
           uid: 'vecino_local_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}',
           email: email,
@@ -157,10 +166,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return newUser;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'invalid-api-key' ||
+      final isConfigOrNetworkError = e.code == 'invalid-api-key' ||
           e.code == 'app-not-authorized' ||
           e.code == 'network-request-failed' ||
-          e.code == 'internal-error') {
+          e.code == 'internal-error' ||
+          e.code == 'unknown' ||
+          (e.message != null && (
+              e.message!.contains('API key not valid') ||
+              e.message!.contains('api-key') ||
+              e.message!.contains('internal error') ||
+              e.message!.contains('network') ||
+              e.message!.contains('blocked')
+          ));
+      if (isConfigOrNetworkError) {
         return UserModel(
           uid: 'vecino_${DateTime.now().millisecondsSinceEpoch}',
           email: email,
