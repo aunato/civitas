@@ -73,6 +73,7 @@ configurations.all {
         force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0'
         force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.1.0'
         force 'org.jetbrains.kotlin:kotlin-reflect:2.1.0'
+        force 'com.google.maps.android:android-maps-utils:3.9.0'
     }
 }
 
