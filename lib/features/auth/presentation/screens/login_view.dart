@@ -6,13 +6,19 @@ import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/register_usecase.dart';
 import '../widgets/auth_text_field.dart';
 import '../../../home/presentation/screens/home_view.dart';
 
 class LoginView extends StatefulWidget {
   final LoginUseCase? loginUseCase;
+  final RegisterUseCase? registerUseCase;
 
-  const LoginView({super.key, this.loginUseCase});
+  const LoginView({
+    super.key,
+    this.loginUseCase,
+    this.registerUseCase,
+  });
 
   @override
   State<LoginView> createState() => _LoginViewState();
@@ -22,28 +28,31 @@ class _LoginViewState extends State<LoginView> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isRegisterMode = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
   late final LoginUseCase _loginUseCase;
+  late final RegisterUseCase _registerUseCase;
 
   @override
   void initState() {
     super.initState();
-    if (widget.loginUseCase != null) {
-      _loginUseCase = widget.loginUseCase!;
-    } else {
-      final remoteDataSource = AuthRemoteDataSourceImpl();
-      final repository = AuthRepositoryImpl(remoteDataSource: remoteDataSource);
-      _loginUseCase = LoginUseCase(repository);
-    }
+    final remoteDataSource = AuthRemoteDataSourceImpl();
+    final repository = AuthRepositoryImpl(remoteDataSource: remoteDataSource);
+    _loginUseCase = widget.loginUseCase ?? LoginUseCase(repository);
+    _registerUseCase = widget.registerUseCase ?? RegisterUseCase(repository);
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -62,17 +71,24 @@ class _LoginViewState extends State<LoginView> {
 
   void _fillDemoCredentials() {
     setState(() {
+      _isRegisterMode = false;
       _emailController.text = 'vecino.demo@civitas.cl';
       _passwordController.text = 'civitas123';
       _errorMessage = null;
     });
   }
 
-  Future<void> _submitLogin() async {
-    // Cerrar teclado
+  Future<void> _submitAuth() async {
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) return;
+
+    if (_isRegisterMode && _passwordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _errorMessage = 'Las contraseñas no coinciden.';
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -80,10 +96,19 @@ class _LoginViewState extends State<LoginView> {
     });
 
     try {
-      final user = await _loginUseCase.call(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final UserEntity user;
+      if (_isRegisterMode) {
+        user = await _registerUseCase.call(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          rol: 'VECINO',
+        );
+      } else {
+        user = await _loginUseCase.call(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      }
 
       if (!mounted) return;
 
@@ -95,7 +120,15 @@ class _LoginViewState extends State<LoginView> {
         return;
       }
 
-      // Navegación fluida a HomeView con mapa en pantalla completa
+      if (_isRegisterMode) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Cuenta vecinal creada con éxito! Bienvenido a CIVITAS.'),
+            backgroundColor: AppColors.successGreen,
+          ),
+        );
+      }
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => HomeView(currentUser: user)),
       );
@@ -130,8 +163,8 @@ class _LoginViewState extends State<LoginView> {
                 children: [
                   // Logo e Iconografía Institucional
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
@@ -140,12 +173,12 @@ class _LoginViewState extends State<LoginView> {
                     child: const Center(
                       child: Icon(
                         Icons.shield_rounded,
-                        size: 58,
+                        size: 52,
                         color: AppColors.primary,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // Título y Bajada
                   Text(
@@ -156,7 +189,7 @@ class _LoginViewState extends State<LoginView> {
                       letterSpacing: 2.0,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     AppConstants.appTagline,
                     textAlign: TextAlign.center,
@@ -165,7 +198,7 @@ class _LoginViewState extends State<LoginView> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Contenedor tipo Tarjeta Moderna
                   Card(
@@ -176,23 +209,99 @@ class _LoginViewState extends State<LoginView> {
                       side: const BorderSide(color: AppColors.border),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(22.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Selector de pestaña (Ingreso / Registro)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            padding: const EdgeInsets.all(4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    key: const Key('tab_login'),
+                                    onTap: () {
+                                      if (_isRegisterMode) {
+                                        setState(() {
+                                          _isRegisterMode = false;
+                                          _errorMessage = null;
+                                        });
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      decoration: BoxDecoration(
+                                        color: !_isRegisterMode ? AppColors.primary : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(9),
+                                      ),
+                                      child: Text(
+                                        'Ingresar',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: !_isRegisterMode ? Colors.white : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    key: const Key('tab_register'),
+                                    onTap: () {
+                                      if (!_isRegisterMode) {
+                                        setState(() {
+                                          _isRegisterMode = true;
+                                          _errorMessage = null;
+                                        });
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 9),
+                                      decoration: BoxDecoration(
+                                        color: _isRegisterMode ? AppColors.primary : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(9),
+                                      ),
+                                      child: Text(
+                                        'Registrarse',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: _isRegisterMode ? Colors.white : AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // Título dinámico
                           Text(
-                            'Ingreso Vecinal',
+                            _isRegisterMode ? 'Registro Vecinal' : 'Ingreso Vecinal',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryDark,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'Accede a la red comunitaria de alerta temprana',
-                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          Text(
+                            _isRegisterMode
+                                ? 'Crea tu cuenta ciudadana para unirte a CIVITAS'
+                                : 'Accede a la red comunitaria de alerta temprana',
+                            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 18),
 
                           // Banner de error si existe
                           if (_errorMessage != null) ...[
@@ -271,12 +380,45 @@ class _LoginViewState extends State<LoginView> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 24),
 
-                          // Botón de Inicio de Sesión
+                          // Campo Confirmar Contraseña (solo en modo registro)
+                          if (_isRegisterMode) ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              key: const Key('register_confirm_password_field'),
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureConfirmPassword,
+                              decoration: InputDecoration(
+                                labelText: 'Confirmar Contraseña',
+                                prefixIcon: const Icon(Icons.lock_reset_rounded),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onPressed: () {
+                                    setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+                                  },
+                                ),
+                              ),
+                              validator: (val) {
+                                if (val == null || val.isEmpty) {
+                                  return 'Confirme su contraseña';
+                                }
+                                if (val != _passwordController.text) {
+                                  return 'Las contraseñas no coinciden';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+
+                          const SizedBox(height: 22),
+
+                          // Botón Principal (Iniciar Sesión / Crear Cuenta)
                           ElevatedButton(
                             key: const Key('login_submit_button'),
-                            onPressed: _isLoading ? null : _submitLogin,
+                            onPressed: _isLoading ? null : _submitAuth,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -293,71 +435,98 @@ class _LoginViewState extends State<LoginView> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : const Text(
-                                    'Iniciar Sesión',
-                                    style: TextStyle(
+                                : Text(
+                                    _isRegisterMode ? 'Crear Cuenta Vecinal' : 'Iniciar Sesión',
+                                    style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: 0.5,
                                     ),
                                   ),
                           ),
-                          const SizedBox(height: 12),
 
-                          // Botón de Acceso Rápido en Modo Demo
-                          OutlinedButton.icon(
-                            key: const Key('login_demo_button'),
-                            onPressed: _isLoading ? null : _enterDemoMode,
-                            icon: const Icon(Icons.bolt_rounded, color: AppColors.primary),
-                            label: const Text(
-                              'Acceso Directo (Modo Demo)',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                          // Opciones de modo inicio de sesión
+                          if (!_isRegisterMode) ...[
+                            const SizedBox(height: 12),
+
+                            // Botón de Acceso Rápido en Modo Demo
+                            OutlinedButton.icon(
+                              key: const Key('login_demo_button'),
+                              onPressed: _isLoading ? null : _enterDemoMode,
+                              icon: const Icon(Icons.bolt_rounded, color: AppColors.primary),
+                              label: const Text(
+                                'Acceso Directo (Modo Demo)',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                side: const BorderSide(color: AppColors.primary, width: 1.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
                             ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: const BorderSide(color: AppColors.primary, width: 1.5),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                            const SizedBox(height: 14),
+
+                            // Tarjeta de credenciales de prueba para facilitar ingreso
+                            InkWell(
+                              onTap: _fillDemoCredentials,
+                              borderRadius: BorderRadius.circular(10),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.key_outlined, size: 18, color: AppColors.primary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: const [
+                                          Text(
+                                            'Cuenta de prueba preconfigurada',
+                                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                                          ),
+                                          Text(
+                                            'vecino.demo@civitas.cl / civitas123 (Toca para rellenar)',
+                                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                          ],
+
                           const SizedBox(height: 14),
 
-                          // Tarjeta de credenciales de prueba para facilitar ingreso
-                          InkWell(
-                            onTap: _fillDemoCredentials,
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.06),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.key_outlined, size: 18, color: AppColors.primary),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: const [
-                                        Text(
-                                          'Cuenta de prueba preconfigurada',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
-                                        ),
-                                        Text(
-                                          'vecino.demo@civitas.cl / civitas123 (Toca para rellenar)',
-                                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                          // Enlace para alternar entre login y registro
+                          TextButton(
+                            key: const Key('auth_toggle_mode_button'),
+                            onPressed: () {
+                              setState(() {
+                                _isRegisterMode = !_isRegisterMode;
+                                _errorMessage = null;
+                              });
+                            },
+                            child: Text(
+                              _isRegisterMode
+                                  ? '¿Ya tienes una cuenta? Inicia sesión aquí'
+                                  : '¿No tienes cuenta? Regístrate aquí',
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -366,12 +535,12 @@ class _LoginViewState extends State<LoginView> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   // Nota sobre protección de identidad (Ley 19.628 de la tesis)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.lock_person_outlined, size: 16, color: AppColors.textSecondary),
+                      Icon(Icons.lock_person_outlined, size: 15, color: AppColors.textSecondary),
                       SizedBox(width: 6),
                       Text(
                         'Identidad protegida conforme a la Ley 19.628',

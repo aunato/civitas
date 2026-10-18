@@ -88,5 +88,28 @@ void main() {
       // Verifica mensaje de error renderizado
       expect(find.text('Credenciales incorrectas o usuario no encontrado.'), findsOneWidget);
     });
+
+    testWidgets('5. Permite alternar a modo registro y validar confirmación de contraseña', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+
+      // Alternar a modo registro tocando la pestaña Registrarse
+      await tester.tap(find.byKey(const Key('tab_register')));
+      await tester.pumpAndSettle();
+
+      // Debe mostrar el formulario de Registro Vecinal
+      expect(find.text('Registro Vecinal'), findsOneWidget);
+      expect(find.text('Crear Cuenta Vecinal'), findsOneWidget);
+      expect(find.byKey(const Key('register_confirm_password_field')), findsOneWidget);
+
+      // Probar validación de contraseñas no coincidentes
+      await tester.enterText(find.byKey(const Key('login_email_field')), 'nuevo.vecino@civitas.cl');
+      await tester.enterText(find.byKey(const Key('login_password_field')), 'clave123');
+      await tester.enterText(find.byKey(const Key('register_confirm_password_field')), 'distinta123');
+      await tester.tap(find.byKey(const Key('login_submit_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Las contraseñas no coinciden'), findsOneWidget);
+    });
   });
 }
+
