@@ -1,6 +1,6 @@
 # Cloud Functions para CIVITAS
 
-Funciones Serverless en **TypeScript** y **Node.js 20** para la automatización comunitaria y reglas de negocio del sistema CIVITAS.
+Funciones Serverless en **TypeScript** y **Node.js 24** para la automatización comunitaria y reglas de negocio del sistema CIVITAS.
 
 ---
 
@@ -20,7 +20,7 @@ Funciones Serverless en **TypeScript** y **Node.js 20** para la automatización 
 ## 🚀 Despliegue en Firebase
 
 ### 1. Requisitos Previos
-- Node.js versión 20.x instalado
+- Node.js versión 24.x instalado
 - Firebase CLI instalado globalmente:
   ```bash
   npm install -g firebase-tools
