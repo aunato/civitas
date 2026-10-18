@@ -4,6 +4,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../widgets/auth_text_field.dart';
 import '../../../home/presentation/screens/home_view.dart';
@@ -44,6 +45,27 @@ class _LoginViewState extends State<LoginView> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _enterDemoMode() {
+    FocusScope.of(context).unfocus();
+    const demoUser = UserEntity(
+      uid: 'vecino_demo_01',
+      email: 'vecino.demo@civitas.cl',
+      rol: 'VECINO',
+      reputacion: 100,
+    );
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const HomeView(currentUser: demoUser)),
+    );
+  }
+
+  void _fillDemoCredentials() {
+    setState(() {
+      _emailController.text = 'vecino.demo@civitas.cl';
+      _passwordController.text = 'civitas123';
+      _errorMessage = null;
+    });
   }
 
   Future<void> _submitLogin() async {
@@ -279,6 +301,65 @@ class _LoginViewState extends State<LoginView> {
                                       letterSpacing: 0.5,
                                     ),
                                   ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Botón de Acceso Rápido en Modo Demo
+                          OutlinedButton.icon(
+                            key: const Key('login_demo_button'),
+                            onPressed: _isLoading ? null : _enterDemoMode,
+                            icon: const Icon(Icons.bolt_rounded, color: AppColors.primary),
+                            label: const Text(
+                              'Acceso Directo (Modo Demo)',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: AppColors.primary, width: 1.5),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // Tarjeta de credenciales de prueba para facilitar ingreso
+                          InkWell(
+                            onTap: _fillDemoCredentials,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.key_outlined, size: 18, color: AppColors.primary),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: const [
+                                        Text(
+                                          'Cuenta de prueba preconfigurada',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                                        ),
+                                        Text(
+                                          'vecino.demo@civitas.cl / civitas123 (Toca para rellenar)',
+                                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
