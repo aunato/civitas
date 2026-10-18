@@ -18,7 +18,7 @@ dependencies:
   firebase_messaging: ^15.1.6
 
   # --- Servicios de Geolocalización y Mapas ---
-  google_maps_flutter: ^2.10.0
+  google_maps_flutter: 2.9.0
   geolocator: ^13.0.2
 
   # --- UI y Componentes Visuales ---
@@ -31,6 +31,7 @@ dev_dependencies:
 
 dependency_overrides:
   geolocator_android: 4.6.1
+  google_maps_flutter_android: 2.14.0
 
 flutter:
   uses-material-design: true
