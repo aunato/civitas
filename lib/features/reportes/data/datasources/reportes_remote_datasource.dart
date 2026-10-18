@@ -185,7 +185,7 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
       ReporteModel(
         id_reporte: 'demo_02',
         autor_ref: 'vecino_comunitario_2',
-        tipo: FirebaseConstants.tipoFallaLuminaria,
+        tipo: FirebaseConstants.tipoEmergenciaMedica,
         coordenadas: const GeoPoint(-33.4475, -70.6710),
         geohash: '66jc5r',
         estado: FirebaseConstants.estadoValidado,
@@ -195,7 +195,7 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
       ReporteModel(
         id_reporte: 'demo_03',
         autor_ref: 'vecino_comunitario_3',
-        tipo: FirebaseConstants.tipoRoboAsalto,
+        tipo: FirebaseConstants.tipoAsalto,
         coordenadas: const GeoPoint(-33.4510, -70.6670),
         geohash: '66jc5m',
         estado: FirebaseConstants.estadoActivo,
