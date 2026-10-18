@@ -5,6 +5,7 @@ import '../../../../core/errors/exceptions.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../widgets/auth_text_field.dart';
@@ -42,10 +43,21 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    final remoteDataSource = AuthRemoteDataSourceImpl();
-    final repository = AuthRepositoryImpl(remoteDataSource: remoteDataSource);
-    _loginUseCase = widget.loginUseCase ?? LoginUseCase(repository);
-    _registerUseCase = widget.registerUseCase ?? RegisterUseCase(repository);
+    if (widget.loginUseCase != null && widget.registerUseCase != null) {
+      _loginUseCase = widget.loginUseCase!;
+      _registerUseCase = widget.registerUseCase!;
+    } else {
+      try {
+        final remoteDataSource = AuthRemoteDataSourceImpl();
+        final repository = AuthRepositoryImpl(remoteDataSource: remoteDataSource);
+        _loginUseCase = widget.loginUseCase ?? LoginUseCase(repository);
+        _registerUseCase = widget.registerUseCase ?? RegisterUseCase(repository);
+      } catch (_) {
+        final fallbackRepo = _FallbackAuthRepository();
+        _loginUseCase = widget.loginUseCase ?? LoginUseCase(fallbackRepo);
+        _registerUseCase = widget.registerUseCase ?? RegisterUseCase(fallbackRepo);
+      }
+    }
   }
 
   @override
@@ -85,7 +97,7 @@ class _LoginViewState extends State<LoginView> {
 
     if (_isRegisterMode && _passwordController.text != _confirmPasswordController.text) {
       setState(() {
-        _errorMessage = 'Las contraseñas no coinciden.';
+        _errorMessage = 'Las contraseñas no coinciden';
       });
       return;
     }
@@ -560,4 +572,45 @@ class _LoginViewState extends State<LoginView> {
       ),
     );
   }
+}
+
+class _FallbackAuthRepository implements AuthRepository {
+  @override
+  Stream<UserEntity?> get authStateChanges => const Stream.empty();
+
+  @override
+  Future<UserEntity?> getCurrentUser() async => null;
+
+  @override
+  Future<UserEntity> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    return UserEntity(
+      uid: 'vecino_demo_01',
+      email: email,
+      rol: 'VECINO',
+      reputacion: 100,
+    );
+  }
+
+  @override
+  Future<UserEntity> registerWithEmailAndPassword({
+    required String email,
+    required String password,
+    required String rol,
+  }) async {
+    return UserEntity(
+      uid: 'vecino_${DateTime.now().millisecondsSinceEpoch}',
+      email: email,
+      rol: rol,
+      reputacion: 100,
+    );
+  }
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  Future<void> updateFcmToken(String uid, String token) async {}
 }

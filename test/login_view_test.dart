@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:civitas/core/theme/app_theme.dart';
 import 'package:civitas/features/auth/domain/usecases/login_usecase.dart';
+import 'package:civitas/features/auth/domain/usecases/register_usecase.dart';
 import 'package:civitas/features/auth/presentation/screens/login_view.dart';
 import 'mocks/mock_auth_repository.dart';
 
@@ -9,16 +10,21 @@ void main() {
   group('LoginView - Pruebas de Integración de Widgets', () {
     late MockAuthRepository mockAuthRepository;
     late LoginUseCase loginUseCase;
+    late RegisterUseCase registerUseCase;
 
     setUp(() {
       mockAuthRepository = MockAuthRepository();
       loginUseCase = LoginUseCase(mockAuthRepository);
+      registerUseCase = RegisterUseCase(mockAuthRepository);
     });
 
     Widget createWidgetUnderTest() {
       return MaterialApp(
         theme: AppTheme.lightTheme,
-        home: LoginView(loginUseCase: loginUseCase),
+        home: LoginView(
+          loginUseCase: loginUseCase,
+          registerUseCase: registerUseCase,
+        ),
       );
     }
 
@@ -109,6 +115,28 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Las contraseñas no coinciden'), findsOneWidget);
+    });
+
+    testWidgets('6. Permite alternar entre login y registro mediante el botón inferior', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+
+      // Inicialmente en modo login
+      expect(find.text('Ingreso Vecinal'), findsOneWidget);
+      expect(find.text('¿No tienes cuenta? Regístrate aquí'), findsOneWidget);
+
+      // Tocar enlace inferior para alternar a registro
+      await tester.tap(find.byKey(const Key('auth_toggle_mode_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Registro Vecinal'), findsOneWidget);
+      expect(find.text('¿Ya tienes una cuenta? Inicia sesión aquí'), findsOneWidget);
+
+      // Tocar enlace inferior para volver a login
+      await tester.tap(find.byKey(const Key('auth_toggle_mode_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ingreso Vecinal'), findsOneWidget);
+      expect(find.text('¿No tienes cuenta? Regístrate aquí'), findsOneWidget);
     });
   });
 }

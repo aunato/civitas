@@ -14,14 +14,17 @@ abstract class AuthRemoteDataSource {
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
-  final FirebaseAuth firebaseAuth;
-  final FirebaseFirestore firestore;
+  FirebaseAuth? _firebaseAuth;
+  FirebaseFirestore? _firestore;
 
   AuthRemoteDataSourceImpl({
     FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
-  })  : firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
-        firestore = firestore ?? FirebaseFirestore.instance;
+  })  : _firebaseAuth = firebaseAuth,
+        _firestore = firestore;
+
+  FirebaseAuth get firebaseAuth => _firebaseAuth ??= FirebaseAuth.instance;
+  FirebaseFirestore get firestore => _firestore ??= FirebaseFirestore.instance;
 
   @override
   Stream<UserModel?> get authStateChanges {
