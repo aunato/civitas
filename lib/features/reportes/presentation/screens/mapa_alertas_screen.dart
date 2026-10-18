@@ -40,7 +40,7 @@ class _MapaAlertasScreenState extends State<MapaAlertasScreen> {
 
   Future<void> _centerUserLocation() async {
     try {
-      final position = await LocationService.getCurrentLocation();
+      final position = await LocationService.instance.getCurrentLocation();
       final userLatLng = LatLng(position.latitude, position.longitude);
 
       setState(() {

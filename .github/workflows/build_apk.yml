@@ -73,6 +73,16 @@ jobs:
       - name: Ejecutar Suite de Pruebas Unitarias
         run: flutter test
 
+      - name: Validar y Preparar Configuración de Google Maps API Key
+        run: |
+          if [ -z "${{ secrets.MAPS_API_KEY }}" ]; then
+            echo "::warning::El Secret 'MAPS_API_KEY' no está configurado en GitHub. El APK compilará con clave placeholder y los mapas de Google aparecerán en gris en el teléfono hasta agregar el Secret."
+            echo "MAPS_CONFIG_STATUS=⚠️ Sin configurar (Requiere Secret MAPS_API_KEY)" >> $GITHUB_ENV
+          else
+            echo "Clave de Google Maps detectada correctamente en GitHub Secrets."
+            echo "MAPS_CONFIG_STATUS=✅ Configurada" >> $GITHUB_ENV
+          fi
+
       - name: Compilar APK en Modo Release
         env:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
@@ -98,10 +108,24 @@ jobs:
           Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
 
           ---
+          ### Estado de Configuración de Google Maps
+          * **Estado de la Clave:** ${{ env.MAPS_CONFIG_STATUS }}
+          * **¿Por qué el mapa se ve gris/blanco en la app?**
+            Google Maps para Android no descarga los mosaicos de calles sin una clave de API activa de Google Cloud con facturación habilitada.
+
+          ---
           ### Huellas Digitales del Certificado de Firma (Keystore Release)
           * **Package Name:** \`com.civitas.app\`
           * **Huella Digital SHA-1:** \`${{ env.SHA1 }}\`
           * **Huella Digital SHA-256:** \`${{ env.SHA256 }}\`
+
+          > **Cómo habilitar el Mapa de Google Maps en 3 pasos:**
+          > 1. En [Google Cloud Console](https://console.cloud.google.com/): Habilita la API **Maps SDK for Android** y vincula una cuenta de facturación (tienes \$200 USD gratis al mes).
+          > 2. En tu API Key de Google Cloud: Agrega restricción de Android con:
+          >    * Nombre del paquete: \`com.civitas.app\`
+          >    * SHA-1: \`${{ env.SHA1 }}\`
+          > 3. En GitHub: Ve a tu repositorio > **Settings > Secrets and variables > Actions** y crea un nuevo secret llamado \`MAPS_API_KEY\` con tu clave.
+          >    *(GitHub compilará automáticamente una nueva versión y el mapa se verá inmediatamente)*.
 
           > **Instrucciones para Firebase Console:**
           > 1. Ve a tu proyecto en [Firebase Console](https://console.firebase.google.com/).

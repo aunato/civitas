@@ -19,6 +19,8 @@ dependencies:
 
   # --- Servicios de Geolocalización y Mapas ---
   google_maps_flutter: 2.9.0
+  google_maps_flutter_android: 2.14.0
+  google_maps_flutter_platform_interface: ^2.6.0
   geolocator: ^13.0.2
 
   # --- UI y Componentes Visuales ---

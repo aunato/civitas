@@ -24,7 +24,11 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
-def mapsApiKey = project.findProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: "REEMPLAZAR_CON_TU_GOOGLE_MAPS_API_KEY"
+def rawMapsApiKey = project.findProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: ""
+def mapsApiKey = rawMapsApiKey.toString().trim()
+if (!mapsApiKey || mapsApiKey.isEmpty()) {
+    mapsApiKey = "REEMPLAZAR_CON_TU_GOOGLE_MAPS_API_KEY"
+}
 
 android {
     namespace "com.civitas.app"

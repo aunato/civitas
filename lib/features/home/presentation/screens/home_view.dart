@@ -56,6 +56,8 @@ class _HomeViewState extends State<HomeView> {
     AppConstants.defaultLongitude,
   );
 
+  late final Stream<List<ReporteEntity>> _reportesStream;
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +77,62 @@ class _HomeViewState extends State<HomeView> {
       _crearReporteUseCase = widget.crearReporteUseCase ?? CrearReporteUseCase(reportesRepo);
       _validarReporteUseCase = widget.validarReporteUseCase ?? ValidarReporteUseCase(reportesRepo);
     }
+    _reportesStream = _getReportesUseCase.call();
+  }
+
+  void _showMapsDiagnostics() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.map_rounded, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Diagnóstico de Mapa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '¿Por qué el mapa se ve gris o no carga calles?',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Google Maps para Android requiere una API Key activa generada en Google Cloud Console vinculada al paquete y huella de este APK.',
+                style: TextStyle(fontSize: 12),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Datos de Registro en Google Cloud Console:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              SizedBox(height: 6),
+              SelectableText(
+                '• Nombre del Paquete: com.civitas.app\n'
+                '• API a Habilitar: Maps SDK for Android\n'
+                '• SHA-1 (Keystore Release):\nAA:87:38:41:F7:A7:EF:D9:21:1C:C6:28:D8:32:4F:BA:7B:CA:23:48',
+                style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.primaryDark),
+              ),
+              SizedBox(height: 12),
+              Text(
+                'Nota: En Google Cloud, la cuenta debe tener facturación habilitada (crédito gratuito de \$200 USD mensuales) para permitir la descarga de mosaicos cartográficos.',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Recentra el mapa automáticamente en la posición del usuario usando el LocationService
@@ -244,7 +302,7 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<List<ReporteEntity>>(
-        stream: _getReportesUseCase.call(),
+        stream: _reportesStream,
         builder: (context, snapshot) {
           final reportes = snapshot.data ?? [];
           final markers = _buildIncidentMarkers(reportes);
@@ -326,6 +384,11 @@ class _HomeViewState extends State<HomeView> {
                               ),
                             ],
                           ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.help_outline, color: AppColors.textSecondary, size: 20),
+                          onPressed: _showMapsDiagnostics,
+                          tooltip: 'Diagnóstico del Mapa',
                         ),
                         IconButton(
                           icon: const Icon(Icons.logout, color: AppColors.textSecondary),
