@@ -10,6 +10,9 @@ jobs:
     name: Compilar APK Release
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
       - name: Clonar Repositorio
         uses: actions/checkout@v4
@@ -41,3 +44,14 @@ jobs:
           name: civitas-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
+
+      - name: Publicar Release para Descarga Directa en Celular
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete v1.0.0 --yes || true
+          git push --delete origin v1.0.0 || true
+          gh release create v1.0.0 build/app/outputs/flutter-apk/app-release.apk \
+            --title "CIVITAS APK v1.0.0 (Instalador Android)" \
+            --notes "Descarga directa de CIVITAS APK para instalar y probar en tu celular Android. Abre el archivo app-release.apk en tu teléfono para instalar la aplicación."
