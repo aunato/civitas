@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'app.dart';
 import 'core/constants/app_colors.dart';
 import 'core/services/firebase_service.dart';
@@ -22,19 +20,7 @@ void main() async {
     ),
   );
 
-  // 3. Forzar Hybrid Composition en Android para evitar pantallas negras o grises en Google Maps
-  try {
-    final GoogleMapsFlutterPlatform mapsImplementation = GoogleMapsFlutterPlatform.instance;
-    if (mapsImplementation is GoogleMapsFlutterAndroid) {
-      mapsImplementation.useAndroidViewSurface = true;
-      await mapsImplementation.initializeWithRenderer(AndroidMapRenderer.latest);
-      debugPrint('[CIVITAS-Main] Google Maps Android inicializado con Hybrid Composition y renderer latest.');
-    }
-  } catch (e) {
-    debugPrint('[CIVITAS-Main] Advertencia inicializando Google Maps Android: $e');
-  }
-
-  // 4. Inicialización asíncrona de Firebase (Firebase Core y Firestore Offline Persistence)
+  // 3. Inicialización asíncrona de Firebase (Firebase Core y Firestore Offline Persistence)
   debugPrint('[CIVITAS-Main] Iniciando servicios en la nube...');
   await FirebaseService.initialize();
 

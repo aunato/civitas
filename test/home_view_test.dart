@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:civitas/core/theme/app_theme.dart';
 import 'package:civitas/features/auth/domain/entities/user_entity.dart';
 import 'package:civitas/features/home/presentation/screens/home_view.dart';
@@ -12,7 +13,7 @@ import 'mocks/mock_location_service.dart';
 import 'mocks/mock_reportes_repository.dart';
 
 void main() {
-  group('HomeView - Pruebas de Integración con GoogleMap y Geolocalización', () {
+  group('HomeView - Pruebas de Integración con OpenStreetMap y Geolocalización', () {
     late MockLocationService mockLocationService;
     late MockReportesRepository mockReportesRepository;
     late CrearReporteUseCase crearReporteUseCase;
@@ -47,11 +48,13 @@ void main() {
       );
     }
 
-    testWidgets('1. Renderiza GoogleMap a pantalla completa y los controles flotantes', (tester) async {
+    testWidgets('1. Renderiza OpenStreetMap a pantalla completa y los controles flotantes', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
 
-      // 1. GoogleMap montado en el árbol de widgets
-      expect(find.byKey(const Key('home_google_map')), findsOneWidget);
+      // 1. OpenStreetMap (FlutterMap) montado en el árbol de widgets
+      expect(find.byKey(const Key('home_osm_map')), findsOneWidget);
+      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(find.byType(TileLayer), findsOneWidget);
 
       // 2. Información del ciudadano en la barra superior flotante
       expect(find.text('vecino.lider@civitas.cl'), findsOneWidget);
@@ -130,11 +133,10 @@ void main() {
       // Verificar que el contador flotante se actualiza dinámicamente a 2
       expect(find.text('2 Incidentes en el perímetro'), findsOneWidget);
 
-      // Verificar que el widget GoogleMap recibió los marcadores
-      final googleMapWidget = tester.widget<GoogleMap>(find.byKey(const Key('home_google_map')));
-      expect(googleMapWidget.markers.length, equals(2));
-      expect(googleMapWidget.markers.any((m) => m.markerId.value == 'rep_1'), isTrue);
-      expect(googleMapWidget.markers.any((m) => m.markerId.value == 'rep_2'), isTrue);
+      // Verificar que los marcadores de incidentes se renderizaron en el mapa
+      expect(find.byKey(const Key('home_osm_map')), findsOneWidget);
+      expect(find.byKey(const Key('marker_rep_1')), findsOneWidget);
+      expect(find.byKey(const Key('marker_rep_2')), findsOneWidget);
     });
   });
 }

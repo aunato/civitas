@@ -24,7 +24,7 @@ lib/
 │   ├── reportes/        # Módulo Central de Alertas y Botón de Pánico
 │   │   ├── data/        # Firestore 'reportes', gestión de transacciones y estados
 │   │   ├── domain/      # ReporteEntity, Casos de Uso (Crear, Disparar Pánico <3s, Validar)
-│   │   └── presentation/# Mapa interactivo (Google Maps), Botón de Pánico y tarjetas
+│   │   └── presentation/# Mapa interactivo (OpenStreetMap), Botón de Pánico y tarjetas
 │   └── home/            # Dashboard y navegación del ciudadano
 ├── app.dart             # Configuración principal de MaterialApp y temas
 └── main.dart            # Inicialización asíncrona de Firebase Core y FCM
@@ -40,8 +40,9 @@ lib/
 | `firebase_auth` | `^5.3.3` | Gestión de identidad de vecinos y dirigentes |
 | `cloud_firestore` | `^5.5.1` | Persistencia en tiempo real y soporte offline de reportes |
 | `firebase_messaging` | `^15.1.6` | Alertas tempranas Push comunitarias (Android 13+ y Background) |
-| `google_maps_flutter`| `^2.10.0`| Visualización territorial interactiva de delitos |
-| `geolocator` | `^13.0.2`| Captura precisa GPS y verificación de radio de 500m |
+| `flutter_map` | `^7.0.2` | Visualización territorial abierta con OpenStreetMap (sin API Keys) |
+| `latlong2` | `^0.9.1` | Modelado de coordenadas geodésicas y cálculo de distancias |
+| `geolocator` | `^13.0.2` | Captura precisa GPS y verificación de radio de 500m |
 
 ---
 
@@ -51,10 +52,10 @@ lib/
 - Flutter SDK (versión 3.19 o superior)
 - Android Studio / Android SDK (API 34)
 
-### 2. Configurar Firebase y Google Maps
-1. **Google Maps**:
-   - Abra `android/app/src/main/AndroidManifest.xml`.
-   - Reemplace `REEMPLAZAR_CON_TU_GOOGLE_MAPS_API_KEY` por su clave de API de Google Cloud Console con el SDK de Maps habilitado.
+### 2. Configurar Firebase y Mapas
+1. **Mapas (OpenStreetMap)**:
+   - Integrado de manera nativa y 100% gratuita con OpenStreetMap (OSM).
+   - No requiere claves de API, registro en Google Cloud Console ni cuentas de facturación bancaria.
 2. **Firebase**:
    - Reemplace `android/app/google-services.json` con el archivo descargado de su consola de Firebase Console.
 

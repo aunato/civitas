@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import '../constants/app_constants.dart';
 import '../errors/exceptions.dart';
 
@@ -8,7 +9,7 @@ abstract class ILocationService {
   Future<bool> handleLocationPermission();
   Future<Position> getCurrentLocation();
   Future<LatLng> getCurrentLatLng();
-  Future<LatLng> centerMapOnUser(GoogleMapController controller, {double zoom = 16.0});
+  Future<LatLng> centerMapOnUser(MapController controller, {double zoom = 16.0});
 }
 
 class LocationService implements ILocationService {
@@ -89,16 +90,9 @@ class LocationService implements ILocationService {
 
   /// Recentra la cámara del mapa automáticamente en la posición del usuario
   @override
-  Future<LatLng> centerMapOnUser(GoogleMapController controller, {double zoom = 16.0}) async {
+  Future<LatLng> centerMapOnUser(MapController controller, {double zoom = 16.0}) async {
     final latLng = await getCurrentLatLng();
-    await controller.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: latLng,
-          zoom: zoom,
-        ),
-      ),
-    );
+    controller.move(latLng, zoom);
     return latLng;
   }
 

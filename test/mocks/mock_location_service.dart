@@ -1,5 +1,6 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:civitas/core/services/location_service.dart';
 
 class MockLocationService implements ILocationService {
@@ -47,7 +48,7 @@ class MockLocationService implements ILocationService {
   }
 
   @override
-  Future<LatLng> centerMapOnUser(GoogleMapController controller, {double zoom = 16.0}) async {
+  Future<LatLng> centerMapOnUser(MapController controller, {double zoom = 16.0}) async {
     centerMapCalls++;
     return await getCurrentLatLng();
   }

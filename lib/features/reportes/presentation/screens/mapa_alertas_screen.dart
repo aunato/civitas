@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/location_service.dart';
@@ -25,7 +26,7 @@ class MapaAlertasScreen extends StatefulWidget {
 }
 
 class _MapaAlertasScreenState extends State<MapaAlertasScreen> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   LatLng _initialPosition = const LatLng(
     AppConstants.defaultLatitude,
     AppConstants.defaultLongitude,
@@ -48,34 +49,48 @@ class _MapaAlertasScreenState extends State<MapaAlertasScreen> {
         _isLoadingLocation = false;
       });
 
-      _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(target: userLatLng, zoom: 16),
-        ),
-      );
+      _mapController.move(userLatLng, 16);
     } catch (_) {
       setState(() => _isLoadingLocation = false);
     }
   }
 
-  Set<Marker> _buildMarkers(List<ReporteEntity> reportes) {
+  List<Marker> _buildMarkers(List<ReporteEntity> reportes) {
     return reportes.map((rep) {
       final isPanic = rep.isPanicAlert;
-      final hue = isPanic
-          ? BitmapDescriptor.hueRed
-          : (rep.isValidated ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueYellow);
+      final color = isPanic
+          ? AppColors.panicRed
+          : (rep.isValidated ? AppColors.warningOrange : const Color(0xFFFBC02D));
 
       return Marker(
-        markerId: MarkerId(rep.idReporte),
-        position: LatLng(rep.latitud, rep.longitud),
-        icon: BitmapDescriptor.defaultMarkerWithHue(hue),
-        infoWindow: InfoWindow(
-          title: rep.tipo.replaceAll('_', ' ').toUpperCase(),
-          snippet: 'Confirmaciones: ${rep.contadorValidaciones} | Estado: ${rep.estado}',
+        point: LatLng(rep.latitud, rep.longitud),
+        width: 44,
+        height: 44,
+        child: GestureDetector(
           onTap: () => _mostrarDetalleReporte(rep),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(color: color, width: 2.5),
+            ),
+            padding: const EdgeInsets.all(5),
+            child: Icon(
+              isPanic ? Icons.emergency : Icons.warning_amber_rounded,
+              color: color,
+              size: 22,
+            ),
+          ),
         ),
       );
-    }).toSet();
+    }).toList();
   }
 
   void _mostrarDetalleReporte(ReporteEntity reporte) {
@@ -138,16 +153,40 @@ class _MapaAlertasScreenState extends State<MapaAlertasScreen> {
 
           return Stack(
             children: [
-              GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: _initialPosition,
-                  zoom: AppConstants.defaultZoom,
+              FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(
+                  initialCenter: _initialPosition,
+                  initialZoom: AppConstants.defaultZoom,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.all,
+                  ),
                 ),
-                myLocationEnabled: true,
-                myLocationButtonEnabled: false,
-                zoomControlsEnabled: false,
-                markers: markers,
-                onMapCreated: (controller) => _mapController = controller,
+                children: [
+                  TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.civitas.app',
+                    maxZoom: 19,
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      // Marcador de posición del usuario
+                      Marker(
+                        point: _initialPosition,
+                        width: 24,
+                        height: 24,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                          ),
+                        ),
+                      ),
+                      ...markers,
+                    ],
+                  ),
+                ],
               ),
 
               if (_isLoadingLocation)

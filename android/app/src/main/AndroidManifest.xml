@@ -23,11 +23,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/LaunchTheme">
 
-        <!-- Clave de Google Maps Android SDK (Inyectada desde build.gradle o GitHub Secrets) -->
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="${mapsApiKey}"/>
-
         <!-- Canal por defecto de Notificaciones de Emergencia de Firebase Messaging -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

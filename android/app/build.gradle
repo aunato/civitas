@@ -24,12 +24,6 @@ if (flutterVersionName == null) {
     flutterVersionName = "1.0"
 }
 
-def rawMapsApiKey = project.findProperty("MAPS_API_KEY") ?: System.getenv("MAPS_API_KEY") ?: localProperties.getProperty("MAPS_API_KEY") ?: ""
-def mapsApiKey = rawMapsApiKey.toString().trim()
-if (!mapsApiKey || mapsApiKey.isEmpty()) {
-    mapsApiKey = "REEMPLAZAR_CON_TU_GOOGLE_MAPS_API_KEY"
-}
-
 android {
     namespace "com.civitas.app"
     compileSdk 36
@@ -47,7 +41,7 @@ android {
 
     defaultConfig {
         applicationId "com.civitas.app"
-        // minSdkVersion 23 requerido para compatibilidad total con Google Maps SDK y Firebase BoM
+        // minSdkVersion 23 requerido para compatibilidad total con Firebase BoM y Geolocator
         minSdk 23
         targetSdk 35
         versionCode flutterVersionCode.toInteger()
@@ -55,10 +49,6 @@ android {
 
         // multiDexEnabled requerido para proyectos con múltiples servicios de Google Play y Firebase
         multiDexEnabled true
-
-        manifestPlaceholders += [
-            mapsApiKey: mapsApiKey
-        ]
     }
 
     signingConfigs {
@@ -100,7 +90,6 @@ configurations.all {
         force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0'
         force 'org.jetbrains.kotlin:kotlin-stdlib-common:2.1.0'
         force 'org.jetbrains.kotlin:kotlin-reflect:2.1.0'
-        force 'com.google.maps.android:android-maps-utils:3.9.0'
     }
 }
 

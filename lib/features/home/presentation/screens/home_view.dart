@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/firebase_constants.dart';
@@ -39,7 +40,7 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  GoogleMapController? _mapController;
+  final MapController _mapController = MapController();
   late final ILocationService _locationService;
   late final GetReportesCercanosUseCase _getReportesUseCase;
   late final CrearReporteUseCase _crearReporteUseCase;
@@ -78,17 +79,20 @@ class _HomeViewState extends State<HomeView> {
       _validarReporteUseCase = widget.validarReporteUseCase ?? ValidarReporteUseCase(reportesRepo);
     }
     _reportesStream = _getReportesUseCase.call();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _recenterOnUser(isInitial: true);
+    });
   }
 
-  void _showMapsDiagnostics() {
+  void _showMapInfo() {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.map_rounded, color: AppColors.primary),
+            Icon(Icons.public_rounded, color: AppColors.primary),
             SizedBox(width: 8),
-            Text('Diagnóstico de Mapa', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Cartografía Comunitaria', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const SingleChildScrollView(
@@ -97,30 +101,25 @@ class _HomeViewState extends State<HomeView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '¿Por qué el mapa se ve gris o no carga calles?',
+                'OpenStreetMap (OSM) Integrado',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primaryDark),
               ),
               SizedBox(height: 8),
               Text(
-                'Google Maps para Android requiere una API Key activa generada en Google Cloud Console vinculada al paquete y huella de este APK.',
+                'CIVITAS utiliza OpenStreetMap para la visualización territorial comunitaria en tiempo real. Esto permite una cartografía 100% abierta, gratuita, sin bloqueos de facturación y con disponibilidad permanente para la comunidad.',
                 style: TextStyle(fontSize: 12),
               ),
               SizedBox(height: 12),
               Text(
-                'Datos de Registro en Google Cloud Console:',
+                'Componentes en Pantalla:',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
               ),
               SizedBox(height: 6),
-              SelectableText(
-                '• Nombre del Paquete: com.civitas.app\n'
-                '• API a Habilitar: Maps SDK for Android\n'
-                '• SHA-1 (Keystore Release):\nAA:87:38:41:F7:A7:EF:D9:21:1C:C6:28:D8:32:4F:BA:7B:CA:23:48',
-                style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: AppColors.primaryDark),
-              ),
-              SizedBox(height: 12),
               Text(
-                'Nota: En Google Cloud, la cuenta debe tener facturación habilitada (crédito gratuito de \$200 USD mensuales) para permitir la descarga de mosaicos cartográficos.',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontStyle: FontStyle.italic),
+                '• Círculo azul perimetral: Radio de 500m para alertas de seguridad vecinal.\n'
+                '• Marcadores de colores: Incidentes categorizados y reportes comunitarios.\n'
+                '• Punto azul: Tu ubicación satelital GPS en tiempo real.',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -160,18 +159,8 @@ class _HomeViewState extends State<HomeView> {
         _locationStatusMessage = null;
       });
 
-      // 3. Anima la cámara de GoogleMap al punto del usuario
-      if (_mapController != null) {
-        await _mapController!.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: latLng,
-              zoom: 16.5,
-              tilt: 20.0,
-            ),
-          ),
-        );
-      }
+      // 3. Mueve la cámara de OpenStreetMap a la posición del usuario
+      _mapController.move(latLng, 16.5);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -189,44 +178,71 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-    // Recentrado automático en la posición del usuario al cargar el mapa
-    _recenterOnUser(isInitial: true);
-  }
-
-  double _getHueForTipo(String tipo) {
+  Color _getColorForTipo(String tipo) {
     switch (tipo) {
       case FirebaseConstants.tipoBotonPanico:
-        return BitmapDescriptor.hueRed;
+        return AppColors.panicRed;
       case FirebaseConstants.tipoRoboVehiculo:
-        return BitmapDescriptor.hueOrange;
+        return AppColors.warningOrange;
       case FirebaseConstants.tipoActividadSospechosa:
-        return BitmapDescriptor.hueYellow;
+        return const Color(0xFFFBC02D);
       case FirebaseConstants.tipoEmergenciaMedica:
-        return BitmapDescriptor.hueViolet;
+        return const Color(0xFF8E24AA);
       case FirebaseConstants.tipoAsalto:
-        return BitmapDescriptor.hueRose;
+        return const Color(0xFFD81B60);
       default:
-        return BitmapDescriptor.hueCyan;
+        return AppColors.primary;
     }
   }
 
-  Set<Marker> _buildIncidentMarkers(List<ReporteEntity> reportes) {
+  IconData _getIconForTipo(String tipo) {
+    switch (tipo) {
+      case FirebaseConstants.tipoBotonPanico:
+        return Icons.emergency;
+      case FirebaseConstants.tipoRoboVehiculo:
+        return Icons.directions_car;
+      case FirebaseConstants.tipoActividadSospechosa:
+        return Icons.visibility;
+      case FirebaseConstants.tipoEmergenciaMedica:
+        return Icons.medical_services;
+      case FirebaseConstants.tipoAsalto:
+        return Icons.warning_rounded;
+      default:
+        return Icons.location_on;
+    }
+  }
+
+  List<Marker> _buildIncidentMarkers(List<ReporteEntity> reportes) {
     return reportes.map((rep) {
-      final hue = _getHueForTipo(rep.tipo);
+      final color = _getColorForTipo(rep.tipo);
+      final icon = _getIconForTipo(rep.tipo);
 
       return Marker(
-        markerId: MarkerId(rep.idReporte),
-        position: LatLng(rep.latitud, rep.longitud),
-        icon: BitmapDescriptor.defaultMarkerWithHue(hue),
-        infoWindow: InfoWindow(
-          title: rep.tipo.replaceAll('_', ' ').toUpperCase(),
-          snippet: '${rep.contadorValidaciones} validaciones • ${rep.estado}',
+        key: Key('marker_${rep.idReporte}'),
+        point: LatLng(rep.latitud, rep.longitud),
+        width: 44,
+        height: 44,
+        child: GestureDetector(
           onTap: () => _showIncidentBottomSheet(rep),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(color: color, width: 2.5),
+            ),
+            padding: const EdgeInsets.all(5),
+            child: Icon(icon, color: color, size: 22),
+          ),
         ),
       );
-    }).toSet();
+    }).toList();
   }
 
   void _showIncidentBottomSheet(ReporteEntity reporte) {
@@ -309,21 +325,68 @@ class _HomeViewState extends State<HomeView> {
 
           return Stack(
             children: [
-              // 1. GoogleMap ocupando el 100% de la pantalla (Full Screen)
+              // 1. OpenStreetMap (OSM) a pantalla completa
               Positioned.fill(
-                child: GoogleMap(
-                  key: const Key('home_google_map'),
-                  initialCameraPosition: const CameraPosition(
-                    target: _defaultLocation,
-                    zoom: AppConstants.defaultZoom,
+                child: FlutterMap(
+                  key: const Key('home_osm_map'),
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _defaultLocation,
+                    initialZoom: AppConstants.defaultZoom,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all,
+                    ),
                   ),
-                  myLocationEnabled: _hasLocationPermission,
-                  myLocationButtonEnabled: false, // Usamos botón flotante personalizado
-                  zoomControlsEnabled: false,
-                  compassEnabled: true,
-                  mapToolbarEnabled: false,
-                  markers: markers,
-                  onMapCreated: _onMapCreated,
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.civitas.app',
+                      maxZoom: 19,
+                    ),
+                    // Perímetro de seguridad comunitario de 500m
+                    if (_currentLatLng != null)
+                      CircleLayer(
+                        circles: [
+                          CircleMarker(
+                            point: _currentLatLng!,
+                            radius: 500,
+                            useRadiusInMeter: true,
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderColor: AppColors.primary.withOpacity(0.6),
+                            borderStrokeWidth: 1.5,
+                          ),
+                        ],
+                      ),
+                    // Marcador de posición GPS del usuario
+                    if (_currentLatLng != null)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: _currentLatLng!,
+                            width: 26,
+                            height: 26,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 3),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.35),
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    // Marcadores de incidentes reportados
+                    MarkerLayer(
+                      markers: markers,
+                    ),
+                  ],
                 ),
               ),
 
@@ -386,9 +449,9 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.help_outline, color: AppColors.textSecondary, size: 20),
-                          onPressed: _showMapsDiagnostics,
-                          tooltip: 'Diagnóstico del Mapa',
+                          icon: const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 20),
+                          onPressed: _showMapInfo,
+                          tooltip: 'Cartografía Comunitaria',
                         ),
                         IconButton(
                           icon: const Icon(Icons.logout, color: AppColors.textSecondary),
