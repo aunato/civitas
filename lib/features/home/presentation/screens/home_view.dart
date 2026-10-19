@@ -25,6 +25,7 @@ class HomeView extends StatefulWidget {
   final GetReportesCercanosUseCase? getReportesUseCase;
   final CrearReporteUseCase? crearReporteUseCase;
   final ValidarReporteUseCase? validarReporteUseCase;
+  final TileProvider? tileProvider;
 
   const HomeView({
     super.key,
@@ -33,6 +34,7 @@ class HomeView extends StatefulWidget {
     this.getReportesUseCase,
     this.crearReporteUseCase,
     this.validarReporteUseCase,
+    this.tileProvider,
   });
 
   @override
@@ -341,6 +343,7 @@ class _HomeViewState extends State<HomeView> {
                     TileLayer(
                       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.civitas.app',
+                      tileProvider: widget.tileProvider,
                       maxZoom: 19,
                     ),
                     // Perímetro de seguridad comunitario de 500m
