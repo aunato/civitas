@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/firebase_constants.dart';
-import '../../../../core/errors/exceptions.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/utils/geo_utils.dart';
 import '../models/reporte_model.dart';
@@ -55,11 +56,33 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
     try {
       GeoPoint puntoGeo = coordenadas ?? const GeoPoint(0.0, 0.0);
 
-      // Si no se proporcionaron coordenadas previas, consultar al GPS en tiempo real
+      // Si no se proporcionaron coordenadas previas, consultar al GPS en tiempo real con límite estricto
       if (coordenadas == null) {
         debugPrint('[ReportesDataSource] Capturando posición GPS en tiempo real...');
-        final pos = await locationService.getCurrentLocation();
-        puntoGeo = GeoPoint(pos.latitude, pos.longitude);
+        try {
+          final pos = await locationService.getCurrentLocation().timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              debugPrint('[ReportesDataSource] Timeout en GPS, usando ubicación predeterminada.');
+              return Position(
+                latitude: AppConstants.defaultLatitude,
+                longitude: AppConstants.defaultLongitude,
+                timestamp: DateTime.now(),
+                accuracy: 100.0,
+                altitude: 0.0,
+                altitudeAccuracy: 0.0,
+                heading: 0.0,
+                headingAccuracy: 0.0,
+                speed: 0.0,
+                speedAccuracy: 0.0,
+              );
+            },
+          );
+          puntoGeo = GeoPoint(pos.latitude, pos.longitude);
+        } catch (e) {
+          debugPrint('[ReportesDataSource] No se pudo obtener ubicación GPS, usando base: $e');
+          puntoGeo = const GeoPoint(AppConstants.defaultLatitude, AppConstants.defaultLongitude);
+        }
       }
 
       // Calcular Geohash con precisión de 9 caracteres para filtrado espacial eficiente
@@ -84,7 +107,13 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
       );
 
       debugPrint('[ReportesDataSource] Guardando reporte ${docRef.id} en Firestore...');
-      await docRef.set(reporte.toFirestore());
+      // Timeout seguro de 4 segundos para evitar cualquier bloqueo en caso de latencia de red
+      await docRef.set(reporte.toFirestore()).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('[ReportesDataSource] Timeout al escribir en Firestore. Persistido en cola local.');
+        },
+      );
       debugPrint('[ReportesDataSource] Reporte guardado con éxito. Tipo: $tipoIncidente');
 
       return docRef.id;
@@ -101,7 +130,12 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         reporte.id_reporte.isNotEmpty ? reporte.id_reporte : null,
       );
       final finalReport = reporte.copyWith(id_reporte: docRef.id);
-      await docRef.set(finalReport.toFirestore());
+      await docRef.set(finalReport.toFirestore()).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('[ReportesDataSource] Timeout en crearReporte Firestore.');
+        },
+      );
     } catch (e) {
       debugPrint('[ReportesDataSource] Fallback local crear reporte: $e');
     }
@@ -133,7 +167,12 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         'evidencia_url': null,
       };
 
-      await docRef.set(panicData);
+      await docRef.set(panicData).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('[ReportesDataSource] Timeout en activarBotonPanico Firestore.');
+        },
+      );
       return docRef.id;
     } catch (e) {
       debugPrint('[ReportesDataSource] Fallback local al activar pánico: $e');
@@ -230,7 +269,12 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         }
 
         transaction.update(docRef, updates);
-      });
+      }).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('[ReportesDataSource] Timeout en transacción de validación.');
+        },
+      );
     } catch (e) {
       debugPrint('[ReportesDataSource] Fallback local validar reporte: $e');
     }

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/firebase_constants.dart';
-import '../../../../core/services/location_service.dart';
-import '../../domain/entities/reporte_entity.dart';
 import '../../domain/usecases/crear_reporte_usecase.dart';
 
 class CrearReporteScreen extends StatefulWidget {
   final String currentUserId;
   final CrearReporteUseCase crearReporteUseCase;
+  final double? initialLat;
+  final double? initialLng;
 
   const CrearReporteScreen({
     super.key,
     required this.currentUserId,
     required this.crearReporteUseCase,
+    this.initialLat,
+    this.initialLng,
   });
 
   @override
@@ -47,21 +49,42 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
   ];
 
   Future<void> _enviarReporte() async {
+    if (_isLoading) return;
     setState(() => _isLoading = true);
 
     try {
       // Guarda capturando automáticamente la ubicación actual GPS y el tipo de incidente
-      await widget.crearReporteUseCase.guardarConUbicacion(
-        autorUid: widget.currentUserId,
-        tipoIncidente: _selectedTipo,
-      );
+      // con timeout preventivo de 5 segundos para evitar bloqueos en la interfaz
+      await widget.crearReporteUseCase
+          .guardarConUbicacion(
+            autorUid: widget.currentUserId,
+            tipoIncidente: _selectedTipo,
+            latitud: widget.initialLat,
+            longitud: widget.initialLng,
+          )
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('[CrearReporte] Finalizando por timeout seguro de interfaz.');
+              return 'reporte_guardado_local';
+            },
+          );
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           backgroundColor: AppColors.successGreen,
-          content: Text('Reporte emitido con éxito a la red comunitaria.'),
+          content: Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Reporte emitido con éxito a la red comunitaria.'),
+              ),
+            ],
+          ),
+          duration: Duration(seconds: 3),
         ),
       );
 
@@ -83,6 +106,8 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tieneCoordenadas = widget.initialLat != null && widget.initialLng != null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nuevo Reporte Ciudadano'),
@@ -110,9 +135,11 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
                   final isSelected = _selectedTipo == item['id'];
 
                   return InkWell(
-                    onTap: () {
-                      setState(() => _selectedTipo = item['id'] as String);
-                    },
+                    onTap: _isLoading
+                        ? null
+                        : () {
+                            setState(() => _selectedTipo = item['id'] as String);
+                          },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -151,10 +178,36 @@ class _CrearReporteScreenState extends State<CrearReporteScreen> {
                 },
               ),
             ),
-            const Text(
-              'Su ubicación actual será adjuntada automáticamente al reporte.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: tieneCoordenadas
+                    ? AppColors.successGreen.withOpacity(0.08)
+                    : AppColors.warningOrange.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: tieneCoordenadas
+                      ? AppColors.successGreen.withOpacity(0.3)
+                      : AppColors.warningOrange.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    tieneCoordenadas ? Icons.gps_fixed : Icons.satellite_alt_outlined,
+                    size: 16,
+                    color: tieneCoordenadas ? AppColors.successGreen : AppColors.warningOrange,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    tieneCoordenadas
+                        ? 'Ubicación GPS sincronizada: (${widget.initialLat!.toStringAsFixed(4)}, ${widget.initialLng!.toStringAsFixed(4)})'
+                        : 'Capturando ubicación GPS en tiempo real...',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

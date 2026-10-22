@@ -23,3 +23,15 @@ export interface ReporteDocument {
   validado_en?: admin.firestore.Timestamp;
   notificado_fcm?: boolean;
 }
+
+export interface UsuarioDocument {
+  uid?: string;
+  email?: string;
+  rol?: string;
+  reputacion?: number;
+  fcm_token?: string;
+  ultima_ubicacion?: admin.firestore.GeoPoint;
+  latitud?: number;
+  longitud?: number;
+  geohash?: string;
+}

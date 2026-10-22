@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/firebase_constants.dart';
 import '../../../../core/services/location_service.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../auth/data/datasources/auth_remote_datasource.dart';
 import '../../../auth/data/repositories/auth_repository_impl.dart';
@@ -60,6 +63,9 @@ class _HomeViewState extends State<HomeView> {
   );
 
   late final Stream<List<ReporteEntity>> _reportesStream;
+  StreamSubscription? _fcmSubscription;
+  final Set<String> _knownReportIds = {};
+  bool _isInitialReportLoad = true;
 
   @override
   void initState() {
@@ -81,9 +87,117 @@ class _HomeViewState extends State<HomeView> {
       _validarReporteUseCase = widget.validarReporteUseCase ?? ValidarReporteUseCase(reportesRepo);
     }
     _reportesStream = _getReportesUseCase.call();
+
+    // Escuchar alertas push recibidas en primer plano (FCM Foreground)
+    _fcmSubscription = NotificationService.onForegroundMessage.listen((RemoteMessage message) {
+      if (!mounted) return;
+      final title = message.notification?.title ?? '🚨 Alerta Comunitaria';
+      final body = message.notification?.body ?? 'Nuevo incidente en tu sector.';
+      final latStr = message.data['latitud'];
+      final lngStr = message.data['longitud'];
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.panicRed,
+          duration: const Duration(seconds: 6),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(body, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
+          action: (latStr != null && lngStr != null)
+              ? SnackBarAction(
+                  label: 'VER EN MAPA',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    final lat = double.tryParse(latStr);
+                    final lng = double.tryParse(lngStr);
+                    if (lat != null && lng != null) {
+                      _mapController.move(LatLng(lat, lng), 17.5);
+                    }
+                  },
+                )
+              : null,
+        ),
+      );
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recenterOnUser(isInitial: true);
     });
+  }
+
+  @override
+  void dispose() {
+    _fcmSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _checkNewProximityAlerts(List<ReporteEntity> reportes) {
+    if (_isInitialReportLoad) {
+      for (final r in reportes) {
+        _knownReportIds.add(r.idReporte);
+      }
+      _isInitialReportLoad = false;
+      return;
+    }
+
+    for (final r in reportes) {
+      if (!_knownReportIds.contains(r.idReporte)) {
+        _knownReportIds.add(r.idReporte);
+        if (r.autorRef != widget.currentUser.uid && _currentLatLng != null) {
+          final enRadio = LocationService.isWithinAlertRadius(
+            userLat: _currentLatLng!.latitude,
+            userLng: _currentLatLng!.longitude,
+            alertLat: r.latitud,
+            alertLng: r.longitud,
+            radiusMeters: 500,
+          );
+
+          if (enRadio) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: r.tipo == FirebaseConstants.tipoBotonPanico
+                      ? AppColors.panicRed
+                      : AppColors.primaryDark,
+                  duration: const Duration(seconds: 5),
+                  content: Row(
+                    children: [
+                      Icon(
+                        r.tipo == FirebaseConstants.tipoBotonPanico
+                            ? Icons.emergency
+                            : Icons.warning_rounded,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          '¡Alerta de Proximidad! Nuevo reporte a menos de 500m.',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  action: SnackBarAction(
+                    label: 'Centrar',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      _mapController.move(LatLng(r.latitud, r.longitud), 17.5);
+                    },
+                  ),
+                ),
+              );
+            });
+          }
+        }
+      }
+    }
   }
 
   void _showMapInfo() {
@@ -163,6 +277,13 @@ class _HomeViewState extends State<HomeView> {
 
       // 3. Mueve la cámara de OpenStreetMap a la posición del usuario
       _mapController.move(latLng, 16.5);
+
+      // 4. Sincronizar geofencing territorial y suscripción push en segundo plano
+      NotificationService.updateUserLocationAndSector(
+        uid: widget.currentUser.uid,
+        latitude: latLng.latitude,
+        longitude: latLng.longitude,
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -323,6 +444,7 @@ class _HomeViewState extends State<HomeView> {
         stream: _reportesStream,
         builder: (context, snapshot) {
           final reportes = snapshot.data ?? [];
+          _checkNewProximityAlerts(reportes);
           final markers = _buildIncidentMarkers(reportes);
 
           return Stack(
@@ -608,11 +730,19 @@ class _HomeViewState extends State<HomeView> {
                               try {
                                 final latLng = _currentLatLng ??
                                     await _locationService.getCurrentLatLng();
-                                await _crearReporteUseCase.dispararBotonPanico(
-                                  autorUid: widget.currentUser.uid,
-                                  latitud: latLng.latitude,
-                                  longitud: latLng.longitude,
-                                );
+                                await _crearReporteUseCase
+                                    .dispararBotonPanico(
+                                      autorUid: widget.currentUser.uid,
+                                      latitud: latLng.latitude,
+                                      longitud: latLng.longitude,
+                                    )
+                                    .timeout(
+                                      const Duration(seconds: 4),
+                                      onTimeout: () {
+                                        debugPrint('[HomeView] SOS enviado con persistencia local.');
+                                        return 'sos_timeout';
+                                      },
+                                    );
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -662,6 +792,8 @@ class _HomeViewState extends State<HomeView> {
                                   builder: (_) => CrearReporteScreen(
                                     currentUserId: widget.currentUser.uid,
                                     crearReporteUseCase: _crearReporteUseCase,
+                                    initialLat: _currentLatLng?.latitude,
+                                    initialLng: _currentLatLng?.longitude,
                                   ),
                                 ),
                               );

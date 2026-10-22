@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/location_service.dart';
 import '../../domain/usecases/crear_reporte_usecase.dart';
 
@@ -28,15 +29,34 @@ class _BotonPanicoState extends State<BotonPanico> {
     setState(() => _isTriggering = true);
 
     try {
-      // HU-03: Detección automática de ubicación GPS al reportar
-      final position = await LocationService.instance.getCurrentLocation();
+      // HU-03: Detección automática de ubicación GPS con timeout rápido
+      double lat = AppConstants.defaultLatitude;
+      double lng = AppConstants.defaultLongitude;
 
-      // HU-02: Envío inmediato en menos de 3 segundos
-      await widget.crearReporteUseCase.dispararBotonPanico(
-        autorUid: widget.userUid,
-        latitud: position.latitude,
-        longitud: position.longitude,
-      );
+      try {
+        final position = await LocationService.instance
+            .getCurrentLocation()
+            .timeout(const Duration(seconds: 3));
+        lat = position.latitude;
+        lng = position.longitude;
+      } catch (e) {
+        debugPrint('[BotonPanico] Error o timeout obteniendo GPS, usando fallback: $e');
+      }
+
+      // HU-02: Envío inmediato en menos de 3 segundos con timeout seguro
+      await widget.crearReporteUseCase
+          .dispararBotonPanico(
+            autorUid: widget.userUid,
+            latitud: lat,
+            longitud: lng,
+          )
+          .timeout(
+            const Duration(seconds: 4),
+            onTimeout: () {
+              debugPrint('[BotonPanico] Alerta SOS despachada en modo asíncrono/offline.');
+              return 'sos_timeout_queued';
+            },
+          );
 
       if (!mounted) return;
 

@@ -88,21 +88,27 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete v1.0.0 --yes || true
-          git push --delete origin v1.0.0 || true
-          gh release create v1.0.0 build/app/outputs/flutter-apk/app-release.apk \
-            --title "CIVITAS APK v1.0.0 (Instalador Android)" \
-            --notes "### Descarga directa de CIVITAS APK
+          # Extraer versión y build number dinámicamente de pubspec.yaml
+          RAW_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
+          APP_VERSION=$(echo "$RAW_VERSION" | cut -d'+' -f1)
+          BUILD_NUM=$(echo "$RAW_VERSION" | cut -d'+' -f2)
+          TAG_NAME="v${APP_VERSION}"
+
+          echo "Publicando Release para versión: $APP_VERSION (Build $BUILD_NUM), Tag: $TAG_NAME"
+
+          gh release delete "$TAG_NAME" --yes || true
+          git push --delete origin "$TAG_NAME" || true
+
+          gh release create "$TAG_NAME" build/app/outputs/flutter-apk/app-release.apk \
+            --title "CIVITAS APK v${APP_VERSION} (Build ${BUILD_NUM}) - Instalador Android" \
+            --notes "### Descarga directa de CIVITAS APK v${APP_VERSION} (Build ${BUILD_NUM})
           Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
 
           ---
-          ### Cartografía Comunitaria (OpenStreetMap)
-          * **Estado:** ✅ Integrado y 100% Funcional sin Claves de API ni Facturación
-          * **Características:**
-            * Calles, avenidas y manzanas territoriales descargadas en vivo vía OpenStreetMap.
-            * Visualización del perímetro de alerta comunitaria (radio perimetral de 500m).
-            * Marcadores dinámicos para botón de pánico SOS e incidentes vecinales en vivo.
-            * Sin dependencias de Google Cloud Console ni de tarjetas de crédito.
+          ### Mejoras en esta versión:
+          * **Alertas de Proximidad y Geofencing en Tiempo Real:** Flujo cliente -> Firestore -> Cloud Functions -> FCM optimizado para notificación inmediata a vecinos en radio de 500m.
+          * **Protección contra Bloqueos (Timeouts Robustos):** Resuelto el congelamiento en estado 'cargando' al crear alertas y botón de pánico SOS mediante guardado con timeout seguro y persistencia offline.
+          * **Cartografía Comunitaria (OpenStreetMap):** 100% nativa sin dependencias de Google Cloud ni claves de API.
 
           ---
           ### Huellas Digitales del Certificado de Firma (Keystore Release)

@@ -218,8 +218,18 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<void> updateFcmToken(String uid, String token) async {
-    await firestore.collection(FirebaseConstants.colUsuarios).doc(uid).update({
-      'fcm_token': token,
-    });
+    try {
+      await firestore.collection(FirebaseConstants.colUsuarios).doc(uid).set({
+        'fcm_token': token,
+        'actualizado_en': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('[AuthDataSource] Timeout sincronizando fcm token.');
+        },
+      );
+    } catch (e) {
+      debugPrint('[AuthDataSource] Advertencia actualizando fcm token: $e');
+    }
   }
 }
