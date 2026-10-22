@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
@@ -29,7 +30,7 @@ abstract class ReportesRemoteDataSource {
   /// Stream en tiempo real de reportes con estado 'ACTIVO' o 'VALIDADO'
   Stream<List<ReporteModel>> getReportesActivosStream();
 
-  /// Validar un reporte por parte de un vecino (+1 confirmación)
+  /// Validar un reporte por parte de un vecino (+1 confirmación atómica)
   Future<void> validarReporte({
     required String idReporte,
     required String validadorUid,
@@ -39,6 +40,45 @@ abstract class ReportesRemoteDataSource {
 class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
   final FirebaseFirestore firestore;
   final ILocationService locationService;
+
+  static final StreamController<List<ReporteModel>> _localStreamController =
+      StreamController<List<ReporteModel>>.broadcast();
+
+  static final List<ReporteModel> _demoReportesList = [
+    ReporteModel(
+      id_reporte: 'demo_01',
+      autor_ref: 'vecino_comunitario_1',
+      tipo: FirebaseConstants.tipoActividadSospechosa,
+      coordenadas: const GeoPoint(-33.4489, -70.6693),
+      geohash: '66jc5q',
+      estado: FirebaseConstants.estadoActivo,
+      contador_validaciones: 3,
+      timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
+      validadores: const ['vecino_a', 'vecino_b', 'vecino_c'],
+    ),
+    ReporteModel(
+      id_reporte: 'demo_02',
+      autor_ref: 'vecino_comunitario_2',
+      tipo: FirebaseConstants.tipoEmergenciaMedica,
+      coordenadas: const GeoPoint(-33.4475, -70.6710),
+      geohash: '66jc5r',
+      estado: FirebaseConstants.estadoValidado,
+      contador_validaciones: 5,
+      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+      validadores: const ['vecino_a', 'vecino_b', 'vecino_c', 'vecino_d', 'vecino_e'],
+    ),
+    ReporteModel(
+      id_reporte: 'demo_03',
+      autor_ref: 'vecino_comunitario_3',
+      tipo: FirebaseConstants.tipoAsalto,
+      coordenadas: const GeoPoint(-33.4510, -70.6670),
+      geohash: '66jc5m',
+      estado: FirebaseConstants.estadoActivo,
+      contador_validaciones: 2,
+      timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
+      validadores: const ['vecino_a', 'vecino_b'],
+    ),
+  ];
 
   ReportesRemoteDataSourceImpl({
     FirebaseFirestore? firestore,
@@ -104,10 +144,14 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         contador_validaciones: 0,
         timestamp: DateTime.now(),
         evidencia_url: evidenciaUrl,
+        validadores: const [],
       );
 
+      // Difusión local instantánea
+      _demoReportesList.insert(0, reporte);
+      _localStreamController.add(List.unmodifiable(_demoReportesList));
+
       debugPrint('[ReportesDataSource] Guardando reporte ${docRef.id} en Firestore...');
-      // Timeout seguro de 4 segundos para evitar cualquier bloqueo en caso de latencia de red
       await docRef.set(reporte.toFirestore()).timeout(
         const Duration(seconds: 4),
         onTimeout: () {
@@ -130,6 +174,9 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         reporte.id_reporte.isNotEmpty ? reporte.id_reporte : null,
       );
       final finalReport = reporte.copyWith(id_reporte: docRef.id);
+      _demoReportesList.insert(0, finalReport);
+      _localStreamController.add(List.unmodifiable(_demoReportesList));
+
       await docRef.set(finalReport.toFirestore()).timeout(
         const Duration(seconds: 4),
         onTimeout: () {
@@ -155,6 +202,23 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         precision: 9,
       );
 
+      final panicModel = ReporteModel(
+        id_reporte: docRef.id,
+        autor_ref: autorUid,
+        tipo: FirebaseConstants.tipoBotonPanico,
+        coordenadas: GeoPoint(latitud, longitud),
+        geohash: geohash,
+        estado: FirebaseConstants.estadoActivo,
+        contador_validaciones: 1,
+        timestamp: DateTime.now(),
+        evidencia_url: null,
+        validadores: [autorUid],
+      );
+
+      // Propagación reactiva local inmediata a toda la interfaz
+      _demoReportesList.insert(0, panicModel);
+      _localStreamController.add(List.unmodifiable(_demoReportesList));
+
       final panicData = {
         'id_reporte': docRef.id,
         'autor_ref': autorUid,
@@ -165,6 +229,7 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
         'contador_validaciones': 1,
         'timestamp': FieldValue.serverTimestamp(),
         'evidencia_url': null,
+        'validadores': [autorUid],
       };
 
       await docRef.set(panicData).timeout(
@@ -195,53 +260,18 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
                 .map((doc) => ReporteModel.fromFirestore(doc))
                 .toList();
             if (list.isEmpty) {
-              return _getDemoReportes();
+              return _demoReportesList;
             }
             return list;
           })
           .handleError((error) {
             debugPrint('[ReportesDataSource] Usando reportes demo por fallback: $error');
-            return _getDemoReportes();
+            return _demoReportesList;
           });
     } catch (e) {
       debugPrint('[ReportesDataSource] Error conectando a stream Firestore: $e');
-      return Stream.value(_getDemoReportes());
+      return _localStreamController.stream;
     }
-  }
-
-  List<ReporteModel> _getDemoReportes() {
-    return [
-      ReporteModel(
-        id_reporte: 'demo_01',
-        autor_ref: 'vecino_comunitario_1',
-        tipo: FirebaseConstants.tipoActividadSospechosa,
-        coordenadas: const GeoPoint(-33.4489, -70.6693),
-        geohash: '66jc5q',
-        estado: FirebaseConstants.estadoActivo,
-        contador_validaciones: 3,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
-      ),
-      ReporteModel(
-        id_reporte: 'demo_02',
-        autor_ref: 'vecino_comunitario_2',
-        tipo: FirebaseConstants.tipoEmergenciaMedica,
-        coordenadas: const GeoPoint(-33.4475, -70.6710),
-        geohash: '66jc5r',
-        estado: FirebaseConstants.estadoValidado,
-        contador_validaciones: 5,
-        timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-      ),
-      ReporteModel(
-        id_reporte: 'demo_03',
-        autor_ref: 'vecino_comunitario_3',
-        tipo: FirebaseConstants.tipoAsalto,
-        coordenadas: const GeoPoint(-33.4510, -70.6670),
-        geohash: '66jc5m',
-        estado: FirebaseConstants.estadoActivo,
-        contador_validaciones: 2,
-        timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-      ),
-    ];
   }
 
   @override
@@ -249,34 +279,52 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
     required String idReporte,
     required String validadorUid,
   }) async {
+    // 1. Actualización atómica en memoria/local para reflejo visual instantáneo
+    final idx = _demoReportesList.indexWhere((r) => r.id_reporte == idReporte);
+    if (idx != -1) {
+      final rep = _demoReportesList[idx];
+      final newCount = rep.contador_validaciones + 1;
+      final newValidadores = List<String>.from(rep.validadores);
+      if (!newValidadores.contains(validadorUid)) {
+        newValidadores.add(validadorUid);
+      }
+      _demoReportesList[idx] = rep.copyWith(
+        contador_validaciones: newCount,
+        estado: newCount >= FirebaseConstants.umbralValidacionComunidad
+            ? FirebaseConstants.estadoValidado
+            : rep.estado,
+        validadores: newValidadores,
+      );
+      _localStreamController.add(List.unmodifiable(_demoReportesList));
+    }
+
+    // 2. Incremento atómico en Firestore
     try {
       final docRef = firestore.collection(FirebaseConstants.colReportes).doc(idReporte);
-      await firestore.runTransaction((transaction) async {
-        final snapshot = await transaction.get(docRef);
-        if (!snapshot.exists) {
-          return;
-        }
-
-        final currentValidaciones = (snapshot.get('contador_validaciones') as num?)?.toInt() ?? 0;
-        final nextCount = currentValidaciones + 1;
-
-        final updates = <String, dynamic>{
-          'contador_validaciones': nextCount,
-        };
-
-        if (nextCount >= FirebaseConstants.umbralValidacionComunidad) {
-          updates['estado'] = FirebaseConstants.estadoValidado;
-        }
-
-        transaction.update(docRef, updates);
-      }).timeout(
+      await docRef.set({
+        'contador_validaciones': FieldValue.increment(1),
+        'validadores': FieldValue.arrayUnion([validadorUid]),
+        'ultima_confirmacion': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).timeout(
         const Duration(seconds: 4),
         onTimeout: () {
-          debugPrint('[ReportesDataSource] Timeout en transacción de validación.');
+          debugPrint('[ReportesDataSource] Timeout al confirmar alerta en Firestore.');
         },
       );
+
+      // Si alcanzó el umbral comunitario (>= 5), actualizar estado a VALIDADO
+      final snap = await docRef.get(const GetOptions(source: Source.cache));
+      if (snap.exists) {
+        final totalCount = (snap.data()?['contador_validaciones'] as num?)?.toInt() ?? 0;
+        if (totalCount >= FirebaseConstants.umbralValidacionComunidad) {
+          await docRef.update({
+            'estado': FirebaseConstants.estadoValidado,
+            'validado_en': FieldValue.serverTimestamp(),
+          });
+        }
+      }
     } catch (e) {
-      debugPrint('[ReportesDataSource] Fallback local validar reporte: $e');
+      debugPrint('[ReportesDataSource] Advertencia en validarReporte Firestore: $e');
     }
   }
 }

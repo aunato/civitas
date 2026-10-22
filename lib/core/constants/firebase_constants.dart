@@ -6,6 +6,7 @@ class FirebaseConstants {
   // Roles de usuario
   static const String rolVecino = 'vecino';
   static const String rolDirigente = 'dirigente';
+  static const String rolInstitucional = 'institucional';
   static const String rolAdmin = 'administrador';
 
   // Estados de Reporte

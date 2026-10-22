@@ -9,6 +9,7 @@ class ReporteEntity {
   final int contadorValidaciones;
   final DateTime timestamp;
   final String? evidenciaUrl;
+  final List<String> validadores;
 
   const ReporteEntity({
     required this.idReporte,
@@ -21,8 +22,10 @@ class ReporteEntity {
     required this.contadorValidaciones,
     required this.timestamp,
     this.evidenciaUrl,
+    this.validadores = const [],
   });
 
   bool get isPanicAlert => tipo == 'boton_panico';
   bool get isValidated => estado == 'VALIDADO' || contadorValidaciones >= 5;
+  bool isConfirmedBy(String uid) => validadores.contains(uid);
 }

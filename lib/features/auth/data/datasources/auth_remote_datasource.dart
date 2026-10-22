@@ -61,7 +61,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String password,
   }) async {
-    // 1. Acceso directo con cuenta demo predeterminada para pruebas en terreno
+    // 1. Acceso directo con cuentas demo predeterminadas para pruebas según rol
     final normalizedEmail = email.trim().toLowerCase();
     if (normalizedEmail == 'vecino.demo@civitas.cl' || normalizedEmail == 'demo@civitas.cl') {
       return UserModel(
@@ -69,6 +69,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: email,
         rol: FirebaseConstants.rolVecino,
         reputacion: 100,
+        nombre: 'Vecino Ciudadano',
+        ciudad: 'Alto Hospicio',
+      );
+    }
+    if (normalizedEmail == 'dirigente.demo@civitas.cl') {
+      return UserModel(
+        uid: 'dirigente_demo_01',
+        email: email,
+        rol: FirebaseConstants.rolDirigente,
+        reputacion: 100,
+        nombre: 'Presidente Junta Vecinal N°12',
+        ciudad: 'Alto Hospicio',
+        juntaVecinal: 'Junta de Vecinos Santa Rosa',
+      );
+    }
+    if (normalizedEmail == 'seguridad.demo@civitas.cl' ||
+        normalizedEmail == 'carabineros.demo@civitas.cl' ||
+        normalizedEmail == 'pdi.demo@civitas.cl') {
+      return UserModel(
+        uid: 'institucional_demo_01',
+        email: email,
+        rol: FirebaseConstants.rolInstitucional,
+        reputacion: 100,
+        nombre: 'Oficial de Guardia Carabineros / PDI',
+        ciudad: 'Alto Hospicio',
       );
     }
 

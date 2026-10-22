@@ -17,6 +17,8 @@ class ReporteModel extends ReporteEntity {
   @override
   final DateTime timestamp;
   final String? evidencia_url;
+  @override
+  final List<String> validadores;
 
   ReporteModel({
     required this.id_reporte,
@@ -28,6 +30,7 @@ class ReporteModel extends ReporteEntity {
     this.contador_validaciones = 0,
     required this.timestamp,
     this.evidencia_url,
+    this.validadores = const [],
   }) : super(
           idReporte: id_reporte,
           autorRef: autor_ref,
@@ -39,6 +42,7 @@ class ReporteModel extends ReporteEntity {
           contadorValidaciones: contador_validaciones,
           timestamp: timestamp,
           evidenciaUrl: evidencia_url,
+          validadores: validadores,
         );
 
   /// Construye un ReporteModel a partir de un DocumentSnapshot de Cloud Firestore
@@ -66,6 +70,11 @@ class ReporteModel extends ReporteEntity {
       time = data['timestamp'] as DateTime;
     }
 
+    final valList = (data['validadores'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const <String>[];
+
     return ReporteModel(
       id_reporte: data['id_reporte'] as String? ?? id ?? '',
       autor_ref: data['autor_ref']?.toString() ?? '',
@@ -76,6 +85,7 @@ class ReporteModel extends ReporteEntity {
       contador_validaciones: (data['contador_validaciones'] as num?)?.toInt() ?? 0,
       timestamp: time,
       evidencia_url: data['evidencia_url'] as String?,
+      validadores: valList,
     );
   }
 
@@ -92,6 +102,7 @@ class ReporteModel extends ReporteEntity {
       'contador_validaciones': contador_validaciones,
       'timestamp': FieldValue.serverTimestamp(),
       'evidencia_url': evidencia_url,
+      'validadores': validadores,
     };
   }
 
@@ -110,6 +121,7 @@ class ReporteModel extends ReporteEntity {
       'contador_validaciones': contador_validaciones,
       'timestamp': timestamp.toIso8601String(),
       'evidencia_url': evidencia_url,
+      'validadores': validadores,
     };
   }
 
@@ -124,6 +136,7 @@ class ReporteModel extends ReporteEntity {
     int? contador_validaciones,
     DateTime? timestamp,
     String? evidencia_url,
+    List<String>? validadores,
   }) {
     return ReporteModel(
       id_reporte: id_reporte ?? this.id_reporte,
@@ -135,6 +148,7 @@ class ReporteModel extends ReporteEntity {
       contador_validaciones: contador_validaciones ?? this.contador_validaciones,
       timestamp: timestamp ?? this.timestamp,
       evidencia_url: evidencia_url ?? this.evidencia_url,
+      validadores: validadores ?? this.validadores,
     );
   }
 }

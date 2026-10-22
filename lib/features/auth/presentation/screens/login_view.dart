@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/firebase_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -36,6 +37,7 @@ class _LoginViewState extends State<LoginView> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+  String _selectedRol = FirebaseConstants.rolVecino;
 
   late final LoginUseCase _loginUseCase;
   late final RegisterUseCase _registerUseCase;
@@ -68,16 +70,170 @@ class _LoginViewState extends State<LoginView> {
     super.dispose();
   }
 
-  void _enterDemoMode() {
+  void _enterDemoMode({String rol = 'vecino'}) {
     FocusScope.of(context).unfocus();
-    const demoUser = UserEntity(
-      uid: 'vecino_demo_01',
-      email: 'vecino.demo@civitas.cl',
-      rol: 'VECINO',
-      reputacion: 100,
-    );
+    final UserEntity demoUser;
+    if (rol == FirebaseConstants.rolDirigente) {
+      demoUser = const UserEntity(
+        uid: 'dirigente_demo_01',
+        email: 'dirigente.demo@civitas.cl',
+        rol: 'dirigente',
+        reputacion: 100,
+        nombre: 'Presidente Junta Vecinal N°12',
+        ciudad: 'Alto Hospicio',
+        juntaVecinal: 'Junta de Vecinos Santa Rosa',
+      );
+    } else if (rol == FirebaseConstants.rolInstitucional) {
+      demoUser = const UserEntity(
+        uid: 'institucional_demo_01',
+        email: 'seguridad.demo@civitas.cl',
+        rol: 'institucional',
+        reputacion: 100,
+        nombre: 'Oficial de Guardia Carabineros / PDI',
+        ciudad: 'Alto Hospicio',
+      );
+    } else {
+      demoUser = const UserEntity(
+        uid: 'vecino_demo_01',
+        email: 'vecino.demo@civitas.cl',
+        rol: 'vecino',
+        reputacion: 100,
+        nombre: 'Vecino Ciudadano',
+        ciudad: 'Alto Hospicio',
+      );
+    }
+
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeView(currentUser: demoUser)),
+      MaterialPageRoute(builder: (_) => HomeView(currentUser: demoUser)),
+    );
+  }
+
+  void _showRoleDemoModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Seleccione Rol para Acceso Directo (Demo)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryDark,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Evaluación de interfaces según privilegios de usuario en CIVITAS',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            _buildDemoRoleTile(
+              title: 'Ciudadano / Vecino',
+              subtitle: 'Alertas en mapa, geofencing 500m y botón de pánico SOS',
+              icon: Icons.person_outline,
+              color: AppColors.primary,
+              onTap: () {
+                Navigator.pop(ctx);
+                _enterDemoMode(rol: FirebaseConstants.rolVecino);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildDemoRoleTile(
+              title: 'Presidente Junta Vecinal',
+              subtitle: 'Acceso a reporte semanal consolidado y exportación de datos',
+              icon: Icons.workspace_premium_outlined,
+              color: const Color(0xFFD97706),
+              onTap: () {
+                Navigator.pop(ctx);
+                _enterDemoMode(rol: FirebaseConstants.rolDirigente);
+              },
+            ),
+            const SizedBox(height: 10),
+            _buildDemoRoleTile(
+              title: 'Carabineros / PDI (Institucional)',
+              subtitle: 'Fiscalización de cuadrante y monitoreo oficial de seguridad',
+              icon: Icons.local_police_outlined,
+              color: const Color(0xFF1E3A8A),
+              onTap: () {
+                Navigator.pop(ctx);
+                _enterDemoMode(rol: FirebaseConstants.rolInstitucional);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDemoRoleTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withOpacity(0.2),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: color),
+          ],
+        ),
+      ),
     );
   }
 
@@ -113,7 +269,7 @@ class _LoginViewState extends State<LoginView> {
         user = await _registerUseCase.call(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          rol: 'VECINO',
+          rol: _selectedRol,
         );
       } else {
         user = await _loginUseCase.call(
@@ -135,7 +291,7 @@ class _LoginViewState extends State<LoginView> {
       if (_isRegisterMode) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Cuenta vecinal creada con éxito! Bienvenido a CIVITAS.'),
+            content: Text('¡Cuenta creada con éxito! Bienvenido a CIVITAS.'),
             backgroundColor: AppColors.successGreen,
           ),
         );
@@ -300,7 +456,7 @@ class _LoginViewState extends State<LoginView> {
 
                           // Título dinámico
                           Text(
-                            _isRegisterMode ? 'Registro Vecinal' : 'Ingreso Vecinal',
+                            _isRegisterMode ? 'Registro Vecinal y Roles' : 'Ingreso Vecinal',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryDark,
@@ -309,7 +465,7 @@ class _LoginViewState extends State<LoginView> {
                           const SizedBox(height: 4),
                           Text(
                             _isRegisterMode
-                                ? 'Crea tu cuenta ciudadana para unirte a CIVITAS'
+                                ? 'Crea tu cuenta seleccionando tu perfil ciudadano o institucional'
                                 : 'Accede a la red comunitaria de alerta temprana',
                             style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                           ),
@@ -340,6 +496,37 @@ class _LoginViewState extends State<LoginView> {
                                   ),
                                 ],
                               ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Selector de Rol si está en modo registro
+                          if (_isRegisterMode) ...[
+                            DropdownButtonFormField<String>(
+                              value: _selectedRol,
+                              decoration: const InputDecoration(
+                                labelText: 'Rol / Perfil en CIVITAS',
+                                prefixIcon: Icon(Icons.badge_outlined),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: FirebaseConstants.rolVecino,
+                                  child: Text('👤 Ciudadano / Vecino'),
+                                ),
+                                DropdownMenuItem(
+                                  value: FirebaseConstants.rolDirigente,
+                                  child: Text('🏛️ Presidente / Dirigente Junta Vecinal'),
+                                ),
+                                DropdownMenuItem(
+                                  value: FirebaseConstants.rolInstitucional,
+                                  child: Text('🚓 Carabineros / PDI / Seguridad'),
+                                ),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedRol = val);
+                                }
+                              },
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -461,13 +648,13 @@ class _LoginViewState extends State<LoginView> {
                           if (!_isRegisterMode) ...[
                             const SizedBox(height: 12),
 
-                            // Botón de Acceso Rápido en Modo Demo
+                            // Botón de Acceso Rápido en Modo Demo (con selector de roles)
                             OutlinedButton.icon(
                               key: const Key('login_demo_button'),
-                              onPressed: _isLoading ? null : _enterDemoMode,
+                              onPressed: _isLoading ? null : _showRoleDemoModal,
                               icon: const Icon(Icons.bolt_rounded, color: AppColors.primary),
                               label: const Text(
-                                'Acceso Directo (Modo Demo)',
+                                'Acceso Rápido por Roles (Demo)',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -504,7 +691,7 @@ class _LoginViewState extends State<LoginView> {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: const [
                                           Text(
-                                            'Cuenta de prueba preconfigurada',
+                                            'Cuenta vecinal de prueba',
                                             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
                                           ),
                                           Text(
@@ -589,8 +776,10 @@ class _FallbackAuthRepository implements AuthRepository {
     return UserEntity(
       uid: 'vecino_demo_01',
       email: email,
-      rol: 'VECINO',
+      rol: FirebaseConstants.rolVecino,
       reputacion: 100,
+      nombre: 'Vecino Ciudadano',
+      ciudad: 'Alto Hospicio',
     );
   }
 
@@ -605,6 +794,7 @@ class _FallbackAuthRepository implements AuthRepository {
       email: email,
       rol: rol,
       reputacion: 100,
+      ciudad: 'Alto Hospicio',
     );
   }
 
