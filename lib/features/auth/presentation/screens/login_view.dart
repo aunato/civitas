@@ -456,7 +456,7 @@ class _LoginViewState extends State<LoginView> {
 
                           // Título dinámico
                           Text(
-                            _isRegisterMode ? 'Registro Vecinal y Roles' : 'Ingreso Vecinal',
+                            _isRegisterMode ? 'Registro Vecinal' : 'Ingreso Vecinal',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primaryDark,
