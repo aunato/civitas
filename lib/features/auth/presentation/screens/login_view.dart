@@ -504,6 +504,7 @@ class _LoginViewState extends State<LoginView> {
                           if (_isRegisterMode) ...[
                             DropdownButtonFormField<String>(
                               value: _selectedRol,
+                              isExpanded: true,
                               decoration: const InputDecoration(
                                 labelText: 'Rol / Perfil en CIVITAS',
                                 prefixIcon: Icon(Icons.badge_outlined),
@@ -511,15 +512,15 @@ class _LoginViewState extends State<LoginView> {
                               items: const [
                                 DropdownMenuItem(
                                   value: FirebaseConstants.rolVecino,
-                                  child: Text('👤 Ciudadano / Vecino'),
+                                  child: Text('👤 Ciudadano'),
                                 ),
                                 DropdownMenuItem(
                                   value: FirebaseConstants.rolDirigente,
-                                  child: Text('🏛️ Presidente / Dirigente Junta Vecinal'),
+                                  child: Text('🏛️ Dirigente Junta Vecinal'),
                                 ),
                                 DropdownMenuItem(
                                   value: FirebaseConstants.rolInstitucional,
-                                  child: Text('🚓 Carabineros / PDI / Seguridad'),
+                                  child: Text('🚓 Carabineros / PDI'),
                                 ),
                               ],
                               onChanged: (val) {
