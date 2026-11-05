@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -750,9 +751,49 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ],
                       ),
-                    // Marcadores de incidentes reportados
-                    MarkerLayer(
-                      markers: markers,
+                    // Agrupamiento inteligente de marcadores con flutter_map_marker_cluster
+                    MarkerClusterLayerWidget(
+                      options: MarkerClusterLayerOptions(
+                        maxClusterRadius: 45,
+                        size: const Size(44, 44),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(40),
+                        maxZoom: 18,
+                        disableClusteringAtZoom: 14,
+                        zoomToBoundsOnClick: true,
+                        markers: markers,
+                        builder: (context, clusterMarkers) {
+                          final hasEmergency = clusterMarkers.any((m) {
+                            final k = m.key.toString();
+                            return k.contains('panico') || k.contains('emergencia');
+                          });
+
+                          return Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: hasEmergency ? AppColors.panicRed : AppColors.primaryDark,
+                              border: Border.all(color: Colors.white, width: 2.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                clusterMarkers.length.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),

@@ -1,0 +1,40 @@
+﻿version: "2.0"
+project: "CIVITAS"
+target_defense_date: "2026-11-10"
+mode: "autonomous-execution"
+constraints:
+  preserve_thesis_scope: true
+  strict_fidelity_percent: 95
+  auto_apply_safe_fixes: true
+
+orchestrator:
+  engine: "google-antigravity"
+  workflow: "parallel-subagents"
+  agents:
+    - name: "backend_firebase_agent"
+      role: "Cloud Functions & Firestore Rules Specialist"
+      scope: 
+        - "functions/"
+        - "firestore.rules"
+      actions:
+        - "Implement high-priority FCM push notifications with vibration and sound triggers onAlertCreated."
+        - "Ensure idempotency in trigger updates for community confirmations (threshold >= 5)."
+
+    - name: "mobile_flutter_agent"
+      role: "Flutter Frontend & UI Specialist"
+      scope: 
+        - "lib/"
+        - "pubspec.yaml"
+      actions:
+        - "Integrate flutter_map_marker_cluster to prevent marker overlapping on the map."
+        - "Ensure real-time map updates using Firestore .snapshots() streams."
+        - "Update coordinate fallback to Iquique (-20.2167, -70.1417) in AppConstants.dart."
+
+    - name: "reporting_agent"
+      role: "PDF Export & Institutional Metrics Specialist"
+      scope:
+        - "lib/features/reports/"
+        - "pubspec.yaml"
+      actions:
+        - "Implement PdfExportService using package:pdf and package:printing."
+        - "Generate formal downloadable PDF reports containing CIVITAS branding, metrics, and summary tables for police/authorities."

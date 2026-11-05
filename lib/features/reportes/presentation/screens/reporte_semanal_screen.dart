@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/firebase_constants.dart';
 import '../../domain/entities/reporte_entity.dart';
+import '../../data/services/pdf_report_service.dart';
 
 class ReporteSemanalScreen extends StatelessWidget {
   final List<ReporteEntity> reportes;
@@ -112,8 +113,30 @@ class ReporteSemanalScreen extends StatelessWidget {
         title: const Text('Reporte Semanal Consolidado'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.picture_as_pdf_rounded),
+            tooltip: 'Ver Informe Oficial PDF',
+            onPressed: () async {
+              await PdfReportService.previewPdf(
+                context: context,
+                reportes: incidentesSemana,
+                sectorNombre: sectorNombre,
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.share_outlined),
-            tooltip: 'Exportar Reporte',
+            tooltip: 'Compartir PDF Oficial',
+            onPressed: () async {
+              await PdfReportService.exportAndSharePdf(
+                context: context,
+                reportes: incidentesSemana,
+                sectorNombre: sectorNombre,
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy_all_outlined),
+            tooltip: 'Copiar Texto al Portapapeles',
             onPressed: () => _exportarReporte(context, incidentesSemana),
           ),
         ],
@@ -227,15 +250,39 @@ class ReporteSemanalScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Botón de exportación rápida
+            // Botón de exportación de Informe Oficial en PDF
             ElevatedButton.icon(
-              onPressed: () => _exportarReporte(context, incidentesSemana),
-              icon: const Icon(Icons.file_download_outlined),
-              label: const Text('Exportar Resumen Consolidado (Copiar)'),
+              onPressed: () async {
+                await PdfReportService.previewPdf(
+                  context: context,
+                  reportes: incidentesSemana,
+                  sectorNombre: sectorNombre,
+                );
+              },
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 22),
+              label: const Text(
+                'Generar Informe Oficial PDF (Carabineros / PDI / Juntas)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryDark,
+                backgroundColor: const Color(0xFF1E3A8A),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Botón secundario de copiado rápido
+            OutlinedButton.icon(
+              onPressed: () => _exportarReporte(context, incidentesSemana),
+              icon: const Icon(Icons.copy_rounded, size: 18),
+              label: const Text('Copiar Resumen de Texto al Portapapeles'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryDark,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: AppColors.primaryDark),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),

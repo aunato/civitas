@@ -6,7 +6,7 @@ import 'package:civitas/core/services/location_service.dart';
 class MockLocationService implements ILocationService {
   bool permissionGranted = true;
   bool isServiceEnabled = true;
-  LatLng mockCoordinates = const LatLng(-23.6509, -70.3975);
+  LatLng mockCoordinates = const LatLng(-20.2167, -70.1417);
   int handlePermissionCalls = 0;
   int getCurrentLatLngCalls = 0;
   int centerMapCalls = 0;

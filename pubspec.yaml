@@ -19,11 +19,16 @@ dependencies:
 
   # --- Servicios de Geolocalización y Mapas (OpenStreetMap / OSM) ---
   flutter_map: ^7.0.2
+  flutter_map_marker_cluster: ^1.4.0
   latlong2: ^0.9.1
   geolocator: ^13.0.2
 
   # --- UI y Componentes Visuales ---
   cupertino_icons: ^1.0.8
+
+  # --- Exportación de Informes y Métricas Oficiales (PDF & Impresión) ---
+  pdf: ^3.11.1
+  printing: ^5.13.2
 
 dev_dependencies:
   flutter_test:

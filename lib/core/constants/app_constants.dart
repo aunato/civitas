@@ -2,8 +2,8 @@ class AppConstants {
   static const String appName = 'CIVITAS';
   static const String appTagline = 'Seguridad Ciudadana y Alerta Temprana Comunitaria';
   
-  // Ubicación por defecto (Macrozona Norte - Chile / Antofagasta)
-  static const double defaultLatitude = -23.6509;
-  static const double defaultLongitude = -70.3975;
+  // Ubicación por defecto de respaldo (Iquique, Región de Tarapacá - Chile)
+  static const double defaultLatitude = -20.2167;
+  static const double defaultLongitude = -70.1417;
   static const double defaultZoom = 15.0;
 }

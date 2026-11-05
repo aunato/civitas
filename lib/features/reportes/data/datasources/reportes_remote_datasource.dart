@@ -254,7 +254,7 @@ class ReportesRemoteDataSourceImpl implements ReportesRemoteDataSource {
             FirebaseConstants.estadoActivo,
             FirebaseConstants.estadoValidado,
           ])
-          .snapshots()
+          .snapshots(includeMetadataChanges: true)
           .map((snapshot) {
             final list = snapshot.docs
                 .map((doc) => ReporteModel.fromFirestore(doc))

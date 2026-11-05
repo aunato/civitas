@@ -101,10 +101,32 @@ export class FcmService {
           notification: {
             channelId: esPanico ? "civitas_emergency_channel" : "civitas_alerts_channel",
             sound: "default",
+            defaultSound: true,
             color: esPanico ? "#DC2626" : "#2563EB",
-            priority: esPanico ? "max" : "high",
-            defaultVibrateTimings: true,
+            priority: "max",
+            defaultVibrateTimings: false,
+            vibrateTimingsMillis: esPanico
+              ? [0, 500, 200, 500, 200, 1000]
+              : [0, 300, 150, 300],
             visibility: "public",
+            lightSettings: {
+              color: esPanico ? "#DC2626" : "#2563EB",
+              lightOnDurationMillis: 500,
+              lightOffDurationMillis: 500,
+            },
+          },
+        },
+        apns: {
+          headers: {
+            "apns-priority": "10",
+          },
+          payload: {
+            aps: {
+              sound: "default",
+              badge: 1,
+              contentAvailable: true,
+              critical: esPanico ? 1 : 0,
+            },
           },
         },
       };
@@ -189,9 +211,32 @@ export class FcmService {
             notification: {
               channelId: esPanico ? "civitas_emergency_channel" : "civitas_alerts_channel",
               sound: "default",
+              defaultSound: true,
               color: esPanico ? "#DC2626" : "#2563EB",
-              priority: esPanico ? "max" : "high",
-              defaultVibrateTimings: true,
+              priority: "max",
+              defaultVibrateTimings: false,
+              vibrateTimingsMillis: esPanico
+                ? [0, 500, 200, 500, 200, 1000]
+                : [0, 300, 150, 300],
+              visibility: "public",
+              lightSettings: {
+                color: esPanico ? "#DC2626" : "#2563EB",
+                lightOnDurationMillis: 500,
+                lightOffDurationMillis: 500,
+              },
+            },
+          },
+          apns: {
+            headers: {
+              "apns-priority": "10",
+            },
+            payload: {
+              aps: {
+                sound: "default",
+                badge: 1,
+                contentAvailable: true,
+                critical: esPanico ? 1 : 0,
+              },
             },
           },
         };
@@ -247,10 +292,30 @@ export class FcmService {
         notification: {
           channelId: "civitas_emergency_channel",
           sound: "default",
+          defaultSound: true,
           color: "#DC2626",
           priority: "max",
-          defaultVibrateTimings: true,
+          defaultVibrateTimings: false,
+          vibrateTimingsMillis: [0, 400, 200, 400],
           visibility: "public",
+          lightSettings: {
+            color: "#DC2626",
+            lightOnDurationMillis: 500,
+            lightOffDurationMillis: 500,
+          },
+        },
+      },
+      apns: {
+        headers: {
+          "apns-priority": "10",
+        },
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+            contentAvailable: true,
+            critical: 1,
+          },
         },
       },
     };

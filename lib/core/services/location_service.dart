@@ -65,7 +65,7 @@ class LocationService implements ILocationService {
       final lastKnown = await Geolocator.getLastKnownPosition();
       if (lastKnown != null) return lastKnown;
 
-      // Fallback a coordenadas base de Antofagasta (Chile) para permitir pruebas sin bloqueo
+      // Fallback a coordenadas base de Iquique (Tarapacá, Chile) para permitir pruebas sin bloqueo
       return Position(
         latitude: AppConstants.defaultLatitude,
         longitude: AppConstants.defaultLongitude,
