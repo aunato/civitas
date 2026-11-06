@@ -89,7 +89,7 @@ class PdfReportService {
                       ),
                     ),
                     pw.Text(
-                      'PLATAFORMA CIVITAS • SEGURIDAD CIUDADANA',
+                      'PLATAFORMA CIVITAS | SEGURIDAD CIUDADANA',
                       style: pw.TextStyle(
                         fontSize: 14,
                         fontWeight: pw.FontWeight.bold,
@@ -97,7 +97,7 @@ class PdfReportService {
                       ),
                     ),
                     pw.Text(
-                      'Macrozona Norte • Región de Tarapacá (Iquique - Alto Hospicio)',
+                      'Macrozona Norte | Región de Tarapacá (Iquique - Alto Hospicio)',
                       style: const pw.TextStyle(
                         fontSize: 9,
                         color: PdfColors.grey700,
@@ -179,7 +179,7 @@ class PdfReportService {
                 ),
                 pw.SizedBox(height: 4),
                 pw.Text(
-                  'Destinatarios Oficiales: Carabineros de Chile (Plan Cuadrante) • Policía de Investigaciones (PDI) • Unión Comunal de Juntas de Vecinos',
+                  'Destinatarios Oficiales: Carabineros de Chile (Plan Cuadrante) | Policía de Investigaciones (PDI) | Unión Comunal de Juntas de Vecinos',
                   style: pw.TextStyle(
                     fontSize: 8.5,
                     fontWeight: pw.FontWeight.bold,
@@ -188,7 +188,7 @@ class PdfReportService {
                 ),
                 pw.SizedBox(height: 2),
                 pw.Text(
-                  'Sector Focalizado: $sectorNombre • Período: Últimos 7 Días de Registro Continuo',
+                  'Sector Focalizado: $sectorNombre | Período: Últimos 7 Días de Registro Continuo',
                   style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800),
                 ),
               ],

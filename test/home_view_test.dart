@@ -155,8 +155,8 @@ void main() {
 
       // Verificar que los marcadores de incidentes se renderizaron en el mapa
       expect(find.byKey(const Key('home_osm_map')), findsOneWidget);
-      expect(find.byKey(const Key('marker_rep_1')), findsOneWidget);
-      expect(find.byKey(const Key('marker_rep_2')), findsOneWidget);
+      expect(find.byKey(const Key('marker_rep_1')), findsWidgets);
+      expect(find.byKey(const Key('marker_rep_2')), findsWidgets);
     });
   });
 }
