@@ -642,16 +642,19 @@ class _LoginViewState extends State<LoginView> {
                                               size: 20,
                                             ),
                                             const SizedBox(width: 8),
-                                            Text(
-                                              _credencialUploaded
-                                                  ? 'Credencial Adjuntada ($_credencialPhotoName)'
-                                                  : 'Subir Fotografía de Credencial Oficial',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: _credencialUploaded
-                                                    ? AppColors.successGreen
-                                                    : const Color(0xFF1E3A8A),
+                                            Flexible(
+                                              child: Text(
+                                                _credencialUploaded
+                                                    ? 'Credencial Adjuntada ($_credencialPhotoName)'
+                                                    : 'Subir Fotografía de Credencial Oficial',
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _credencialUploaded
+                                                      ? AppColors.successGreen
+                                                      : const Color(0xFF1E3A8A),
+                                                ),
                                               ),
                                             ),
                                           ],
