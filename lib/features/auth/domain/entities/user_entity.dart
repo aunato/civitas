@@ -13,6 +13,12 @@ class UserEntity {
   final double? latitude;
   final double? longitude;
 
+  // --- Campos para Flujo de Verificación de Roles Oficiales (Tesis CIVITAS) ---
+  final String estadoVerificacion; // 'VERIFICADO', 'PENDING_VERIFICATION', 'RECHAZADO'
+  final String? credencialUrl; // URL o referencia de foto de placa / credencial institucional
+  final String? institucion; // 'Carabineros de Chile', 'Policía de Investigaciones (PDI)', 'Seguridad Municipal'
+  final String? placaInstitucional; // Número de placa oficial del funcionario
+
   const UserEntity({
     required this.uid,
     required this.email,
@@ -27,6 +33,10 @@ class UserEntity {
     this.fcmToken,
     this.latitude,
     this.longitude,
+    this.estadoVerificacion = 'VERIFICADO',
+    this.credencialUrl,
+    this.institucion,
+    this.placaInstitucional,
   });
 
   /// Regla de negocio de la tesis: Si la reputación baja de 30, la cuenta se bloquea automáticamente.
@@ -39,6 +49,14 @@ class UserEntity {
       rol.toLowerCase() == 'pdi';
   bool get isAdmin => rol.toLowerCase() == 'administrador';
   bool get isVecino => !isDirigente && !isInstitucional && !isAdmin;
+
+  /// Estado de aprobación de credencial oficial
+  bool get isPendingVerification =>
+      estadoVerificacion.toUpperCase() == 'PENDING_VERIFICATION';
+  bool get isVerificado =>
+      estadoVerificacion.toUpperCase() == 'VERIFICADO';
+  bool get isRechazado =>
+      estadoVerificacion.toUpperCase() == 'RECHAZADO';
 
   UserEntity copyWith({
     String? uid,
@@ -54,6 +72,10 @@ class UserEntity {
     String? fcmToken,
     double? latitude,
     double? longitude,
+    String? estadoVerificacion,
+    String? credencialUrl,
+    String? institucion,
+    String? placaInstitucional,
   }) {
     return UserEntity(
       uid: uid ?? this.uid,
@@ -69,6 +91,10 @@ class UserEntity {
       fcmToken: fcmToken ?? this.fcmToken,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      estadoVerificacion: estadoVerificacion ?? this.estadoVerificacion,
+      credencialUrl: credencialUrl ?? this.credencialUrl,
+      institucion: institucion ?? this.institucion,
+      placaInstitucional: placaInstitucional ?? this.placaInstitucional,
     );
   }
 }

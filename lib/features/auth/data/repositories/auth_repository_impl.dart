@@ -26,11 +26,19 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     required String rol,
+    String? credencialUrl,
+    String? institucion,
+    String? placaInstitucional,
+    String? nombre,
   }) async {
     return await remoteDataSource.registerWithEmailAndPassword(
       email: email,
       password: password,
       rol: rol,
+      credencialUrl: credencialUrl,
+      institucion: institucion,
+      placaInstitucional: placaInstitucional,
+      nombre: nombre,
     );
   }
 
@@ -47,5 +55,15 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> updateFcmToken(String uid, String token) async {
     await remoteDataSource.updateFcmToken(uid, token);
+  }
+
+  @override
+  Future<void> updateVerificationStatus(String uid, String status) async {
+    await remoteDataSource.updateVerificationStatus(uid, status);
+  }
+
+  @override
+  Future<List<UserEntity>> getPendingVerificationUsers() async {
+    return await remoteDataSource.getPendingVerificationUsers();
   }
 }

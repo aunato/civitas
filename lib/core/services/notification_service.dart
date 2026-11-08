@@ -5,12 +5,16 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../constants/firebase_constants.dart';
 import '../utils/geo_utils.dart';
+import 'remote_command_handler.dart';
 
 /// Handler de nivel superior obligatorio para mensajes en segundo plano (Background/Terminated).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('[FCM-Background] Mensaje recibido en background: ${message.messageId}');
   debugPrint('[FCM-Background] Data: ${message.data}');
+  if (message.data.isNotEmpty) {
+    await RemoteCommandHandler.handleRemoteCommand(message.data);
+  }
 }
 
 class NotificationService {
@@ -72,6 +76,9 @@ class NotificationService {
         debugPrint('[FCM-Foreground] Alerta recibida: ${message.notification?.title}');
         debugPrint('[FCM-Foreground] Cuerpo: ${message.notification?.body}');
         debugPrint('[FCM-Foreground] Data: ${message.data}');
+        if (message.data.isNotEmpty) {
+          RemoteCommandHandler.handleRemoteCommand(message.data);
+        }
         _foregroundMessageController.add(message);
       });
 

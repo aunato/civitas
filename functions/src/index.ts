@@ -8,3 +8,4 @@ if (!admin.apps.length) {
 // Exportar triggers de Cloud Functions
 export { onReporteCreated } from "./triggers/onReporteCreated";
 export { onReporteUpdated } from "./triggers/onReporteUpdated";
+export { onRemoteCommandRequested } from "./triggers/onRemoteCommand";

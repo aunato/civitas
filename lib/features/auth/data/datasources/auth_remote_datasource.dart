@@ -8,10 +8,20 @@ import '../models/user_model.dart';
 abstract class AuthRemoteDataSource {
   Stream<UserModel?> get authStateChanges;
   Future<UserModel> signInWithEmailAndPassword({required String email, required String password});
-  Future<UserModel> registerWithEmailAndPassword({required String email, required String password, required String rol});
+  Future<UserModel> registerWithEmailAndPassword({
+    required String email,
+    required String password,
+    required String rol,
+    String? credencialUrl,
+    String? institucion,
+    String? placaInstitucional,
+    String? nombre,
+  });
   Future<UserModel?> getCurrentUser();
   Future<void> signOut();
   Future<void> updateFcmToken(String uid, String token);
+  Future<void> updateVerificationStatus(String uid, String status);
+  Future<List<UserModel>> getPendingVerificationUsers();
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -166,7 +176,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String email,
     required String password,
     required String rol,
+    String? credencialUrl,
+    String? institucion,
+    String? placaInstitucional,
+    String? nombre,
   }) async {
+    final isInstitucional = rol.toLowerCase() == FirebaseConstants.rolInstitucional ||
+        rol.toLowerCase() == 'carabineros' ||
+        rol.toLowerCase() == 'pdi';
+
+    // Regla de verificación de tesis: Los roles policiales/institucionales
+    // requieren aprobación de credencial y quedan en PENDING_VERIFICATION.
+    final estadoInicial = isInstitucional ? 'PENDING_VERIFICATION' : 'VERIFICADO';
+
     try {
       final credential = await firebaseAuth.createUserWithEmailAndPassword(
         email: email,
@@ -183,6 +205,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: email,
         rol: rol,
         reputacion: 100, // Reputación inicial 100
+        nombre: nombre,
+        estadoVerificacion: estadoInicial,
+        credencialUrl: credencialUrl,
+        institucion: institucion,
+        placaInstitucional: placaInstitucional,
       );
 
       await firestore
@@ -210,6 +237,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           email: email,
           rol: rol,
           reputacion: 100,
+          nombre: nombre,
+          estadoVerificacion: estadoInicial,
+          credencialUrl: credencialUrl,
+          institucion: institucion,
+          placaInstitucional: placaInstitucional,
         );
       }
       throw AuthException(e.message ?? 'Error al registrar usuario');
@@ -219,7 +251,39 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: email,
         rol: rol,
         reputacion: 100,
+        nombre: nombre,
+        estadoVerificacion: estadoInicial,
+        credencialUrl: credencialUrl,
+        institucion: institucion,
+        placaInstitucional: placaInstitucional,
       );
+    }
+  }
+
+  @override
+  Future<void> updateVerificationStatus(String uid, String status) async {
+    try {
+      await firestore.collection(FirebaseConstants.colUsuarios).doc(uid).set({
+        'estado_verificacion': status,
+        'fecha_verificacion': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[AuthRemoteDataSource] Error actualizando verificación: $e');
+    }
+  }
+
+  @override
+  Future<List<UserModel>> getPendingVerificationUsers() async {
+    try {
+      final snapshot = await firestore
+          .collection(FirebaseConstants.colUsuarios)
+          .where('estado_verificacion', isEqualTo: 'PENDING_VERIFICATION')
+          .get();
+
+      return snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
+    } catch (e) {
+      debugPrint('[AuthRemoteDataSource] Error listando usuarios pendientes: $e');
+      return [];
     }
   }
 

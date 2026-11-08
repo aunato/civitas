@@ -16,6 +16,10 @@ class UserModel extends UserEntity {
     super.fcmToken,
     super.latitude,
     super.longitude,
+    super.estadoVerificacion = 'VERIFICADO',
+    super.credencialUrl,
+    super.institucion,
+    super.placaInstitucional,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -32,10 +36,21 @@ class UserModel extends UserEntity {
       lng = (data['longitud'] as num?)?.toDouble();
     }
 
+    final String rol = data['rol'] as String? ?? 'vecino';
+    final bool isInst = rol.toLowerCase() == 'institucional' ||
+        rol.toLowerCase() == 'carabineros' ||
+        rol.toLowerCase() == 'pdi';
+
+    // Regla de verificación: Si el rol es institucional y no se ha especificado,
+    // su estado predeterminado es PENDING_VERIFICATION.
+    final String defaultEstado = isInst ? 'PENDING_VERIFICATION' : 'VERIFICADO';
+    final String estadoVerificacion =
+        data['estado_verificacion'] as String? ?? defaultEstado;
+
     return UserModel(
       uid: doc.id,
       email: data['email'] as String? ?? '',
-      rol: data['rol'] as String? ?? 'vecino',
+      rol: rol,
       reputacion: (data['reputacion'] as num?)?.toInt() ?? 100,
       nombre: data['nombre'] as String?,
       rut: data['rut'] as String?,
@@ -46,6 +61,10 @@ class UserModel extends UserEntity {
       fcmToken: data['fcm_token'] as String?,
       latitude: lat,
       longitude: lng,
+      estadoVerificacion: estadoVerificacion,
+      credencialUrl: data['credencial_url'] as String?,
+      institucion: data['institucion'] as String?,
+      placaInstitucional: data['placa_institucional'] as String?,
     );
   }
 
@@ -62,6 +81,10 @@ class UserModel extends UserEntity {
       'direccion': direccion,
       'junta_vecinal': juntaVecinal,
       'fcm_token': fcmToken,
+      'estado_verificacion': estadoVerificacion,
+      'credencial_url': credencialUrl,
+      'institucion': institucion,
+      'placa_institucional': placaInstitucional,
       'actualizado_en': FieldValue.serverTimestamp(),
     };
 

@@ -105,12 +105,12 @@ jobs:
           Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
 
           ---
-          ### Mejoras en esta versión v1.0.3 (Edición Oficial para Defensa de Título):
-          * **Agrupamiento Inteligente de Marcadores:** Integración con \`flutter_map_marker_cluster\` para visualización ordenada de incidentes por densidad territorial.
-          * **Coordenadas de Respaldo en Iquique (-20.2167, -70.1417):** Sincronización territorial oficial con la Región de Tarapacá y la Macrozona Norte.
-          * **Sincronización Reactiva con Streams (.snapshots()):** Monitoreo en tiempo real de alertas activas y validadas con persistencia offline en Cloud Firestore.
-          * **Exportación Oficial de Informes en PDF:** Diseño formal con membrete de la República de Chile, folio único y métricas para Carabineros (Plan Cuadrante), PDI y Juntas de Vecinos.
-          * **Notificaciones Push FCM de Alta Prioridad:** Canales de emergencia con vibración por hardware (patrón SOS) y sonido prioritario en Cloud Functions.
+          ### Mejoras en esta versión v1.0.4 (Módulo de Seguridad Avanzada y Defensa de Título):
+          * **Flujo de Verificación de Roles Policiales (Carabineros / PDI):** Aprobación de credenciales oficiales con captura fotográfica, número de placa y estado \`PENDING_VERIFICATION\` conforme a protocolos de seguridad.
+          * **Pánico SOS Sigiloso y Grabación de Audio Ambiental:** Grabación silenciosa en segundo plano de hasta 5 minutos ante emergencias críticas y generación de enlace para despacho inmediato vía WhatsApp / Red de Confianza.
+          * **Protocolo Físico Anti-Coacción (Hardware Buttons):** Detección inteligente de 3 pulsaciones en el botón de volumen abajo para cancelación protegida bajo amenaza o activación de modo coacción silenciosa.
+          * **Comandos Remotos Antirrobo (FCM de Alta Prioridad):** Escucha y ejecución en background de directivas de emergencia (\`CMD_FORCE_GPS\` y \`CMD_START_AUDIO_STREAM\`) con Cloud Functions dedicadas.
+          * **Visualización Territorial y Reportes Institucionales:** Agrupamiento dinámico con \`flutter_map_marker_cluster\`, streams reactivos \`.snapshots()\` y exportación formal en PDF.
 
           ---
           ### Huellas Digitales del Certificado de Firma (Keystore Release)

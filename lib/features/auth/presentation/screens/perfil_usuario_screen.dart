@@ -223,6 +223,61 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                         ),
                       ),
                     ),
+                    if (widget.currentUser.isInstitucional) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: widget.currentUser.isPendingVerification
+                              ? const Color(0xFFD97706).withOpacity(0.12)
+                              : AppColors.successGreen.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: widget.currentUser.isPendingVerification
+                                ? const Color(0xFFD97706)
+                                : AppColors.successGreen,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              widget.currentUser.isPendingVerification
+                                  ? Icons.pending_actions_rounded
+                                  : Icons.verified_rounded,
+                              size: 14,
+                              color: widget.currentUser.isPendingVerification
+                                  ? const Color(0xFFD97706)
+                                  : AppColors.successGreen,
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              widget.currentUser.isPendingVerification
+                                  ? 'PENDIENTE DE VERIFICACIÓN (PENDING_VERIFICATION)'
+                                  : 'CREDENCIAL POLICIAL VERIFICADA',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: widget.currentUser.isPendingVerification
+                                    ? const Color(0xFFD97706)
+                                    : AppColors.successGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.currentUser.placaInstitucional != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Placa Oficial: ${widget.currentUser.placaInstitucional}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E3A8A),
+                          ),
+                        ),
+                      ],
+                    ],
                     const SizedBox(height: 4),
                     Text(
                       'Reputación Comunitaria: ${widget.currentUser.reputacion} pts',

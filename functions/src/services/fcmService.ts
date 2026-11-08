@@ -338,4 +338,51 @@ export class FcmService {
       throw error;
     }
   }
+
+  /**
+   * Despacha un comando remoto de seguridad/antirrobo de alta prioridad vía FCM
+   * (CMD_FORCE_GPS o CMD_START_AUDIO_STREAM)
+   */
+  public static async despacharComandoRemoto(
+    fcmToken: string,
+    targetUid: string,
+    comando: "CMD_FORCE_GPS" | "CMD_START_AUDIO_STREAM"
+  ): Promise<string> {
+    const message: admin.messaging.Message = {
+      token: fcmToken,
+      data: {
+        command: comando,
+        targetUid: targetUid,
+        timestamp: Date.now().toString(),
+        priority: "high",
+        module: "antitheft_security",
+      },
+      android: {
+        priority: "high",
+        ttl: 0,
+      },
+      apns: {
+        headers: {
+          "apns-priority": "10",
+          "apns-push-type": "background",
+        },
+        payload: {
+          aps: {
+            contentAvailable: true,
+          },
+        },
+      },
+    };
+
+    try {
+      const response = await admin.messaging().send(message);
+      logger.info(
+        `[FCM-RemoteCommand] Comando ${comando} despachado con éxito a ${targetUid}. ID: ${response}`
+      );
+      return response;
+    } catch (error) {
+      logger.error(`[FCM-RemoteCommand] Error despachando comando remoto:`, error);
+      throw error;
+    }
+  }
 }

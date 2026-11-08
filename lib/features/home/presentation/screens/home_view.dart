@@ -24,6 +24,8 @@ import '../../../reportes/domain/usecases/validar_reporte_usecase.dart';
 import '../../../reportes/presentation/screens/crear_reporte_screen.dart';
 import '../../../reportes/presentation/screens/reporte_semanal_screen.dart';
 import '../../../reportes/presentation/widgets/tarjeta_reporte.dart';
+import '../../../emergency/presentation/controllers/emergency_coordinator.dart';
+import '../../../emergency/presentation/widgets/stealth_recording_banner.dart';
 
 class HomeView extends StatefulWidget {
   final UserEntity currentUser;
@@ -76,6 +78,9 @@ class _HomeViewState extends State<HomeView> {
   bool _showPerimeterCount = false;
   Timer? _perimeterCountTimer;
   int _perimeterCount = 0;
+
+  // Coordinador de funciones de emergencia avanzadas (Audio sigiloso y anti-coacción)
+  late final EmergencyCoordinator _emergencyCoordinator;
 
   @override
   void initState() {
@@ -144,6 +149,24 @@ class _HomeViewState extends State<HomeView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _recenterOnUser(isInitial: true);
     });
+
+    _emergencyCoordinator = EmergencyCoordinator();
+    _emergencyCoordinator.initialize(
+      userUid: _currentUser.uid,
+      defaultLat: AppConstants.defaultLatitude,
+      defaultLng: AppConstants.defaultLongitude,
+      onCoercion: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('🛡️ Protocolo de Coacción Activado (Cancelación Protegida).'),
+              backgroundColor: AppColors.primaryDark,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      },
+    );
   }
 
   @override
@@ -151,6 +174,7 @@ class _HomeViewState extends State<HomeView> {
     _reportesSubscription?.cancel();
     _fcmSubscription?.cancel();
     _perimeterCountTimer?.cancel();
+    _emergencyCoordinator.dispose();
     super.dispose();
   }
 
@@ -996,6 +1020,9 @@ class _HomeViewState extends State<HomeView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Banner discreto de grabación de audio de seguridad (Modo Sigiloso)
+                    StealthRecordingBanner(coordinator: _emergencyCoordinator),
+
                     // Chip dinámico temporal: aparece cuando se genera un nuevo reporte en la zona y desaparece solo
                     if (_showPerimeterCount && _perimeterCount > 0)
                       AnimatedOpacity(
@@ -1073,7 +1100,7 @@ class _HomeViewState extends State<HomeView> {
                                     await _locationService.getCurrentLatLng();
 
                                 // Sincronización instantánea del pánico en toda la zona
-                                await _crearReporteUseCase
+                                final sosId = await _crearReporteUseCase
                                     .dispararBotonPanico(
                                       autorUid: _currentUser.uid,
                                       latitud: latLng.latitude,
@@ -1086,6 +1113,14 @@ class _HomeViewState extends State<HomeView> {
                                         return 'sos_timeout';
                                       },
                                     );
+
+                                // Activación automática de grabación sigilosa de audio (hasta 5 min)
+                                await _emergencyCoordinator.handleSosTriggered(
+                                  reportId: sosId,
+                                  autorUid: _currentUser.uid,
+                                  lat: latLng.latitude,
+                                  lng: latLng.longitude,
+                                );
 
                                 _mapController.move(latLng, 17.0);
 

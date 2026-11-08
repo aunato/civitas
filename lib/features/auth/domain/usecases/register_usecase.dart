@@ -10,11 +10,19 @@ class RegisterUseCase {
     required String email,
     required String password,
     String rol = 'VECINO',
+    String? credencialUrl,
+    String? institucion,
+    String? placaInstitucional,
+    String? nombre,
   }) {
     return repository.registerWithEmailAndPassword(
       email: email.trim(),
       password: password,
       rol: rol,
+      credencialUrl: credencialUrl,
+      institucion: institucion,
+      placaInstitucional: placaInstitucional,
+      nombre: nombre,
     );
   }
 }

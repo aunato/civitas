@@ -31,6 +31,8 @@ class _LoginViewState extends State<LoginView> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _placaController = TextEditingController();
+  final _institucionController = TextEditingController(text: 'Carabineros de Chile');
 
   bool _isRegisterMode = false;
   bool _isLoading = false;
@@ -38,6 +40,8 @@ class _LoginViewState extends State<LoginView> {
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
   String _selectedRol = FirebaseConstants.rolVecino;
+  String? _credencialPhotoName;
+  bool _credencialUploaded = false;
 
   late final LoginUseCase _loginUseCase;
   late final RegisterUseCase _registerUseCase;
@@ -67,6 +71,8 @@ class _LoginViewState extends State<LoginView> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _placaController.dispose();
+    _institucionController.dispose();
     super.dispose();
   }
 
@@ -266,10 +272,20 @@ class _LoginViewState extends State<LoginView> {
     try {
       final UserEntity user;
       if (_isRegisterMode) {
+        final isInst = _selectedRol == FirebaseConstants.rolInstitucional;
         user = await _registerUseCase.call(
           email: _emailController.text.trim(),
           password: _passwordController.text,
           rol: _selectedRol,
+          placaInstitucional: isInst && _placaController.text.trim().isNotEmpty
+              ? _placaController.text.trim()
+              : null,
+          institucion: isInst && _institucionController.text.trim().isNotEmpty
+              ? _institucionController.text.trim()
+              : (isInst ? 'Carabineros de Chile' : null),
+          credencialUrl: isInst
+              ? (_credencialPhotoName ?? 'credencial_oficial_${DateTime.now().millisecondsSinceEpoch}.jpg')
+              : null,
         );
       } else {
         user = await _loginUseCase.call(
@@ -289,12 +305,22 @@ class _LoginViewState extends State<LoginView> {
       }
 
       if (_isRegisterMode) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('¡Cuenta creada con éxito! Bienvenido a CIVITAS.'),
-            backgroundColor: AppColors.successGreen,
-          ),
-        );
+        if (user.isPendingVerification) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Cuenta creada con éxito! Bienvenido a CIVITAS. (Rol institucional en estado PENDING_VERIFICATION)'),
+              backgroundColor: Color(0xFF1E3A8A),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('¡Cuenta creada con éxito! Bienvenido a CIVITAS.'),
+              backgroundColor: AppColors.successGreen,
+            ),
+          );
+        }
       }
 
       Navigator.of(context).pushReplacement(
@@ -530,6 +556,113 @@ class _LoginViewState extends State<LoginView> {
                               },
                             ),
                             const SizedBox(height: 16),
+
+                            // Flujo de Verificación de Roles Policiales / PDI
+                            if (_selectedRol == FirebaseConstants.rolInstitucional) ...[
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E3A8A).withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFF1E3A8A).withOpacity(0.3)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Row(
+                                      children: [
+                                        Icon(Icons.verified_user_outlined, color: Color(0xFF1E3A8A), size: 20),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          'Verificación de Identidad Policial',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF1E3A8A),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    const Text(
+                                      'Por protocolo de seguridad ciudadana, los perfiles institucionales requieren validación de placa y credencial oficial (estado PENDING_VERIFICATION).',
+                                      style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextFormField(
+                                      key: const Key('register_placa_field'),
+                                      controller: _placaController,
+                                      decoration: const InputDecoration(
+                                        labelText: 'N° de Placa o Identificación Policial',
+                                        prefixIcon: Icon(Icons.badge_outlined),
+                                        hintText: 'Ej: CAR-49201 / PDI-8812',
+                                      ),
+                                      validator: (val) {
+                                        if (_selectedRol == FirebaseConstants.rolInstitucional &&
+                                            (val == null || val.trim().isEmpty)) {
+                                          return 'Ingrese su número de placa oficial';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                    InkWell(
+                                      key: const Key('upload_credential_button'),
+                                      onTap: () {
+                                        setState(() {
+                                          _credencialUploaded = true;
+                                          _credencialPhotoName =
+                                              'credencial_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+                                        decoration: BoxDecoration(
+                                          color: _credencialUploaded
+                                              ? AppColors.successGreen.withOpacity(0.12)
+                                              : Colors.white,
+                                          border: Border.all(
+                                            color: _credencialUploaded
+                                                ? AppColors.successGreen
+                                                : const Color(0xFF1E3A8A).withOpacity(0.4),
+                                          ),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              _credencialUploaded
+                                                  ? Icons.check_circle_rounded
+                                                  : Icons.add_a_photo_outlined,
+                                              color: _credencialUploaded
+                                                  ? AppColors.successGreen
+                                                  : const Color(0xFF1E3A8A),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              _credencialUploaded
+                                                  ? 'Credencial Adjuntada ($_credencialPhotoName)'
+                                                  : 'Subir Fotografía de Credencial Oficial',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: _credencialUploaded
+                                                    ? AppColors.successGreen
+                                                    : const Color(0xFF1E3A8A),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
                           ],
 
                           // Campo Correo
@@ -789,13 +922,26 @@ class _FallbackAuthRepository implements AuthRepository {
     required String email,
     required String password,
     required String rol,
+    String? credencialUrl,
+    String? institucion,
+    String? placaInstitucional,
+    String? nombre,
   }) async {
+    final isInst = rol.toLowerCase() == FirebaseConstants.rolInstitucional ||
+        rol.toLowerCase() == 'carabineros' ||
+        rol.toLowerCase() == 'pdi';
+
     return UserEntity(
       uid: 'vecino_${DateTime.now().millisecondsSinceEpoch}',
       email: email,
       rol: rol,
       reputacion: 100,
       ciudad: 'Alto Hospicio',
+      nombre: nombre,
+      estadoVerificacion: isInst ? 'PENDING_VERIFICATION' : 'VERIFICADO',
+      credencialUrl: credencialUrl,
+      institucion: institucion,
+      placaInstitucional: placaInstitucional,
     );
   }
 
@@ -804,4 +950,10 @@ class _FallbackAuthRepository implements AuthRepository {
 
   @override
   Future<void> updateFcmToken(String uid, String token) async {}
+
+  @override
+  Future<void> updateVerificationStatus(String uid, String status) async {}
+
+  @override
+  Future<List<UserEntity>> getPendingVerificationUsers() async => [];
 }

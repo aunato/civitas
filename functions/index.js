@@ -300,3 +300,86 @@ exports.onReporteUpdated = onDocumentUpdated(
     }
   }
 );
+
+/**
+ * Cloud Function Trigger: onRemoteCommandRequested (Módulo Antirrobo y Seguridad Avanzada)
+ * Procesa la creación de peticiones en 'comandos_remotos/{cmdId}'
+ * y despacha comandos de alta prioridad vía FCM (CMD_FORCE_GPS / CMD_START_AUDIO_STREAM)
+ */
+exports.onRemoteCommandRequested = onDocumentCreated(
+  {
+    document: "comandos_remotos/{cmdId}",
+    region: "us-central1",
+    memory: "256MiB",
+    timeoutSeconds: 60,
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const data = snapshot.data();
+    const cmdId = event.params.cmdId;
+    const targetUid = data.target_uid || data.targetUid;
+    const command = data.comando || data.command;
+
+    if (!targetUid || !command) {
+      logger.warn(`[RemoteCommand] Petición ${cmdId} incompleta (falta targetUid o comando).`);
+      return;
+    }
+
+    try {
+      const userDoc = await admin.firestore().collection("usuarios").doc(targetUid).get();
+      if (!userDoc.exists) {
+        logger.warn(`[RemoteCommand] Usuario destino ${targetUid} no encontrado en Firestore.`);
+        return;
+      }
+
+      const fcmToken = userDoc.data()?.fcm_token;
+      if (!fcmToken) {
+        logger.warn(`[RemoteCommand] Usuario ${targetUid} no posee fcm_token registrado.`);
+        return;
+      }
+
+      const message = {
+        token: fcmToken,
+        data: {
+          command: String(command),
+          targetUid: String(targetUid),
+          timestamp: Date.now().toString(),
+          priority: "high",
+          module: "antitheft_security",
+        },
+        android: {
+          priority: "high",
+          ttl: 0,
+        },
+        apns: {
+          headers: {
+            "apns-priority": "10",
+            "apns-push-type": "background",
+          },
+          payload: {
+            aps: {
+              contentAvailable: true,
+            },
+          },
+        },
+      };
+
+      const response = await admin.messaging().send(message);
+      logger.info(`[RemoteCommand] Comando ${command} despachado a ${targetUid}. ID: ${response}`);
+
+      await snapshot.ref.update({
+        despachado: true,
+        fcm_message_id: response,
+        despachado_en: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      logger.error(`[RemoteCommand] Error ejecutando comando para ${targetUid}:`, error);
+      await snapshot.ref.update({
+        error: String(error),
+        fallido_en: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+  }
+);
