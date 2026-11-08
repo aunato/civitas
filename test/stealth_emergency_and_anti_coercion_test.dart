@@ -6,6 +6,8 @@ import 'package:civitas/features/emergency/data/services/hardware_button_listene
 import 'package:civitas/features/emergency/presentation/controllers/emergency_coordinator.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('Funcionalidades de Seguridad Avanzada (Audio Sigiloso & Anti-Coacción)', () {
     late StealthAudioRecorderService audioService;
     late HardwareButtonListenerService hardwareService;
@@ -20,6 +22,8 @@ void main() {
     tearDown(() {
       audioService.stopStealthRecording();
       hardwareService.stopListening();
+      coordinator.stopRecording();
+      coordinator.dispose();
     });
 
     test('1. StealthAudioRecorderService: Inicia grabación silenciosa y genera enlace de WhatsApp', () async {

@@ -10,6 +10,7 @@ import 'package:civitas/features/reportes/domain/entities/reporte_entity.dart';
 import 'package:civitas/features/reportes/domain/usecases/crear_reporte_usecase.dart';
 import 'package:civitas/features/reportes/domain/usecases/get_reportes_cercanos_usecase.dart';
 import 'package:civitas/features/reportes/domain/usecases/validar_reporte_usecase.dart';
+import 'package:civitas/features/emergency/presentation/controllers/emergency_coordinator.dart';
 import 'mocks/mock_location_service.dart';
 import 'mocks/mock_reportes_repository.dart';
 
@@ -52,6 +53,10 @@ void main() {
       crearReporteUseCase = CrearReporteUseCase(mockReportesRepository);
       getReportesUseCase = GetReportesCercanosUseCase(mockReportesRepository);
       validarReporteUseCase = ValidarReporteUseCase(mockReportesRepository);
+    });
+
+    tearDown(() {
+      EmergencyCoordinator().stopRecording();
     });
 
     Widget createWidgetUnderTest() {
@@ -116,6 +121,10 @@ void main() {
       // Verificar que el caso de uso del repositorio de reportes fue invocado
       expect(mockReportesRepository.panicCalls, equals(1));
       expect(find.text('¡ALERTA DE PÁNICO ENVIADA A LA COMUNIDAD!'), findsOneWidget);
+
+      // Limpiar temporizador de grabación de audio para cerrar la prueba limpiamente
+      await EmergencyCoordinator().stopRecording();
+      await tester.pump();
     });
 
     testWidgets('4. Pinta dinámicamente los marcadores cuando el Stream emite reportes activos', (tester) async {

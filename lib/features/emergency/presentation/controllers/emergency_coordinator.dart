@@ -138,5 +138,6 @@ class EmergencyCoordinator {
 
   void dispose() {
     _hardwareService.stopListening();
+    stopRecording();
   }
 }

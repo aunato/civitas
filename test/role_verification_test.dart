@@ -111,8 +111,10 @@ void main() {
       expect(find.byKey(const Key('register_placa_field')), findsOneWidget);
       expect(find.byKey(const Key('upload_credential_button')), findsOneWidget);
 
-      // Tocar botón para adjuntar credencial
-      await tester.tap(find.byKey(const Key('upload_credential_button')));
+      // Tocar botón para adjuntar credencial (asegurando visibilidad en pantalla con scroll)
+      final uploadBtn = find.byKey(const Key('upload_credential_button'));
+      await tester.ensureVisible(uploadBtn);
+      await tester.tap(uploadBtn);
       await tester.pumpAndSettle();
 
       // Debe confirmar adjunción
