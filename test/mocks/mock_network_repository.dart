@@ -61,8 +61,8 @@ class MockNetworkRepository implements NetworkRepository {
     final request = TrustRequestEntity(
       id: 'req_${DateTime.now().millisecondsSinceEpoch}',
       fromUid: fromUser.uid,
-      fromName: fromUser.nombre,
-      fromPhone: fromUser.telefono,
+      fromName: fromUser.nombre ?? 'Vecino CIVITAS',
+      fromPhone: fromUser.telefono ?? '',
       fromRut: fromUser.rut,
       fromRol: fromUser.rol,
       fromReputacion: fromUser.reputacion,
