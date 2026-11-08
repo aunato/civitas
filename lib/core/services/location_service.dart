@@ -19,6 +19,12 @@ class LocationService implements ILocationService {
 
   factory LocationService() => instance;
 
+  /// Coordenadas de respaldo oficiales (Iquique, Tarapacá)
+  static const LatLng defaultLatLng = LatLng(
+    AppConstants.defaultLatitude,
+    AppConstants.defaultLongitude,
+  );
+
   /// Verifica y solicita permisos de ubicación en tiempo real
   @override
   Future<bool> handleLocationPermission() async {

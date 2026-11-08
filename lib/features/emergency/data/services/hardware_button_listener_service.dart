@@ -57,7 +57,6 @@ class HardwareButtonListenerService {
     if (event is KeyDownEvent) {
       final key = event.logicalKey;
       final isVolumeDown = key == LogicalKeyboardKey.audioVolumeDown ||
-          key == LogicalKeyboardKey.volumeDown ||
           // Para pruebas rápidas en emulador / escritorio: Tecla 'v'
           key == LogicalKeyboardKey.keyV;
 
