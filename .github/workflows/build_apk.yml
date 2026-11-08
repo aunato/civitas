@@ -105,10 +105,12 @@ jobs:
           Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
 
           ---
-          ### Mejoras en esta versión:
-          * **Alertas de Proximidad y Geofencing en Tiempo Real:** Flujo cliente -> Firestore -> Cloud Functions -> FCM optimizado para notificación inmediata a vecinos en radio de 500m.
-          * **Protección contra Bloqueos (Timeouts Robustos):** Resuelto el congelamiento en estado 'cargando' al crear alertas y botón de pánico SOS mediante guardado con timeout seguro y persistencia offline.
-          * **Cartografía Comunitaria (OpenStreetMap):** 100% nativa sin dependencias de Google Cloud ni claves de API.
+          ### Mejoras en esta versión v1.0.3 (Edición Oficial para Defensa de Título):
+          * **Agrupamiento Inteligente de Marcadores:** Integración con \`flutter_map_marker_cluster\` para visualización ordenada de incidentes por densidad territorial.
+          * **Coordenadas de Respaldo en Iquique (-20.2167, -70.1417):** Sincronización territorial oficial con la Región de Tarapacá y la Macrozona Norte.
+          * **Sincronización Reactiva con Streams (.snapshots()):** Monitoreo en tiempo real de alertas activas y validadas con persistencia offline en Cloud Firestore.
+          * **Exportación Oficial de Informes en PDF:** Diseño formal con membrete de la República de Chile, folio único y métricas para Carabineros (Plan Cuadrante), PDI y Juntas de Vecinos.
+          * **Notificaciones Push FCM de Alta Prioridad:** Canales de emergencia con vibración por hardware (patrón SOS) y sonido prioritario en Cloud Functions.
 
           ---
           ### Huellas Digitales del Certificado de Firma (Keystore Release)
