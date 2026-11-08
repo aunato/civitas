@@ -232,6 +232,7 @@ void main() {
             currentUser: incompleteUser,
             authRepository: mockAuth,
             networkRepository: mockNetwork,
+            onCompleted: (_) {},
           ),
         ),
       );

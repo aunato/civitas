@@ -21,12 +21,14 @@ class OnboardingWizardScreen extends StatefulWidget {
   final UserEntity currentUser;
   final AuthRepository? authRepository;
   final NetworkRepository? networkRepository;
+  final void Function(UserEntity user)? onCompleted;
 
   const OnboardingWizardScreen({
     super.key,
     required this.currentUser,
     this.authRepository,
     this.networkRepository,
+    this.onCompleted,
   });
 
   @override
@@ -72,11 +74,11 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         );
     _completeProfileUseCase = CompleteProfileUseCase(_authRepository);
 
-    _nameController = TextEditingController(text: widget.currentUser.nombre);
+    _nameController = TextEditingController(text: widget.currentUser.nombre ?? '');
     _rutController = TextEditingController(text: widget.currentUser.rut ?? '');
-    _phoneController = TextEditingController(text: widget.currentUser.telefono);
-    _cityController = TextEditingController(text: widget.currentUser.ciudad.isNotEmpty ? widget.currentUser.ciudad : 'Iquique');
-    _addressController = TextEditingController(text: widget.currentUser.direccion);
+    _phoneController = TextEditingController(text: widget.currentUser.telefono ?? '');
+    _cityController = TextEditingController(text: widget.currentUser.ciudad?.isNotEmpty == true ? widget.currentUser.ciudad! : 'Iquique');
+    _addressController = TextEditingController(text: widget.currentUser.direccion ?? '');
     _juntaVecinalController = TextEditingController(text: widget.currentUser.juntaVecinal ?? '');
 
     _loadDeviceContacts();
@@ -169,11 +171,15 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         ),
       );
 
-      // Redirigir a HomeView
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => HomeView(currentUser: updatedUser)),
-        (route) => false,
-      );
+      if (widget.onCompleted != null) {
+        widget.onCompleted!(updatedUser);
+      } else {
+        // Redirigir a HomeView
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => HomeView(currentUser: updatedUser)),
+          (route) => false,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -621,7 +627,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         CredencialCivitasBadge(
           nombre: _nameController.text.trim().isNotEmpty
               ? _nameController.text.trim()
-              : widget.currentUser.nombre,
+              : (widget.currentUser.nombre ?? 'Vecino CIVITAS'),
           rut: _rutController.text.trim().isNotEmpty
               ? _rutController.text.trim()
               : widget.currentUser.rut,

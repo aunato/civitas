@@ -1,4 +1,4 @@
-import '../../auth/domain/entities/user_entity.dart';
+import 'package:civitas/features/auth/domain/entities/user_entity.dart';
 import '../repositories/network_repository.dart';
 
 class RespondTrustRequestUseCase {

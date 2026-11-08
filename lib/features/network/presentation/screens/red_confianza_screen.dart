@@ -57,7 +57,7 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
     setState(() => _isLoading = true);
     try {
       final contacts = await _repository.getTrustedContacts(widget.currentUser.uid);
-      final requests = await _repository.getPendingTrustRequests(widget.currentUser.telefono);
+      final requests = await _repository.getPendingTrustRequests(widget.currentUser.telefono ?? '');
       final device = await _repository.getDevicePhoneContacts();
 
       if (mounted) {
@@ -381,7 +381,7 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
                 builder: (_) => Container(
                   padding: const EdgeInsets.all(20),
                   child: CredencialCivitasBadge(
-                    nombre: widget.currentUser.nombre,
+                    nombre: widget.currentUser.nombre ?? 'Vecino CIVITAS',
                     rut: widget.currentUser.rut,
                     rol: widget.currentUser.rol,
                     reputacion: widget.currentUser.reputacion,

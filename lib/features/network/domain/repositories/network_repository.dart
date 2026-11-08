@@ -1,4 +1,4 @@
-import '../../auth/domain/entities/user_entity.dart';
+import 'package:civitas/features/auth/domain/entities/user_entity.dart';
 import '../entities/trusted_contact_entity.dart';
 import '../entities/trust_request_entity.dart';
 

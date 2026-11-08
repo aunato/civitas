@@ -1,4 +1,4 @@
-import '../../auth/domain/entities/user_entity.dart';
+import 'package:civitas/features/auth/domain/entities/user_entity.dart';
 import '../../domain/entities/trusted_contact_entity.dart';
 import '../../domain/entities/trust_request_entity.dart';
 import '../../domain/repositories/network_repository.dart';
@@ -52,8 +52,8 @@ class NetworkRepositoryImpl implements NetworkRepository {
     final request = TrustRequestModel(
       id: '',
       fromUid: fromUser.uid,
-      fromName: fromUser.nombre,
-      fromPhone: fromUser.telefono,
+      fromName: fromUser.nombre ?? 'Vecino CIVITAS',
+      fromPhone: fromUser.telefono ?? '',
       fromRut: fromUser.rut,
       fromRol: fromUser.rol,
       fromReputacion: fromUser.reputacion,

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import '../../auth/domain/entities/user_entity.dart';
+import 'package:civitas/features/auth/domain/entities/user_entity.dart';
 import '../models/trusted_contact_model.dart';
 import '../models/trust_request_model.dart';
 
@@ -196,8 +196,8 @@ class NetworkRemoteDataSourceImpl implements NetworkRemoteDataSource {
 
       final contactForRequester = TrustedContactModel(
         id: respondingUser.uid,
-        name: respondingUser.nombre,
-        phone: respondingUser.telefono,
+        name: respondingUser.nombre ?? 'Vecino CIVITAS',
+        phone: respondingUser.telefono ?? '',
         civitasUid: respondingUser.uid,
         isVerified: true,
         relationship: 'Red CIVITAS Verificada',
