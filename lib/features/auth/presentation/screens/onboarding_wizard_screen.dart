@@ -164,6 +164,8 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
       if (!mounted) return;
 
+      setState(() => _isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('¡Perfil configurado y Credencial CIVITAS activada con éxito!'),
@@ -173,6 +175,7 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
 
       if (widget.onCompleted != null) {
         widget.onCompleted!(updatedUser);
+        return;
       } else {
         // Redirigir a HomeView
         Navigator.of(context).pushAndRemoveUntil(

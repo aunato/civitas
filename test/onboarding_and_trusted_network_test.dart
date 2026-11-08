@@ -110,6 +110,11 @@ void main() {
     });
 
     testWidgets('Muestra contactos de confianza y solicitudes pendientes', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       // Agregar un contacto previo
       mockNetwork.trustedContacts.add(
         TrustedContactEntity(
@@ -160,10 +165,13 @@ void main() {
       // Debe verse la solicitud y la credencial de Carlos Salgado
       expect(find.text('Carlos Salgado (Dirigente)'), findsWidgets);
       expect(find.text('CIVITAS-CL-DIR2026'), findsOneWidget);
-      expect(find.text('Aceptar Credencial'), findsOneWidget);
+      final acceptButton = find.text('Aceptar Credencial');
+      expect(acceptButton, findsOneWidget);
 
-      // Aceptar la solicitud
-      await tester.tap(find.text('Aceptar Credencial'));
+      // Aceptar la solicitud asegurando visibilidad
+      await tester.ensureVisible(acceptButton);
+      await tester.pumpAndSettle();
+      await tester.tap(acceptButton);
       await tester.pumpAndSettle();
 
       // Debe abrir diálogo de vínculo confirmado
@@ -178,6 +186,10 @@ void main() {
     });
 
     testWidgets('Pestaña de Contactos telefónicos permite invitar', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         MaterialApp(
           home: RedConfianzaScreen(
@@ -226,6 +238,10 @@ void main() {
     });
 
     testWidgets('Completa los 3 pasos del wizard de Onboarding', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         MaterialApp(
           home: OnboardingWizardScreen(
@@ -266,8 +282,10 @@ void main() {
 
       // Finalizar Onboarding
       final finishButton = find.text('Activar Credencial e Ingresar');
+      await tester.ensureVisible(finishButton);
       await tester.tap(finishButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       // El repositorio debe registrar el perfil completado
       final currentUser = await mockAuth.getCurrentUser();
