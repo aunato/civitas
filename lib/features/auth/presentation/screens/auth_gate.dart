@@ -6,6 +6,7 @@ import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_auth_state_usecase.dart';
 import 'login_view.dart';
+import 'onboarding_wizard_screen.dart';
 import '../../../home/presentation/screens/home_view.dart';
 
 /// Controla la persistencia de la sesión: Redirige automáticamente
@@ -67,6 +68,9 @@ class _AuthGateState extends State<AuthGate> {
 
         final user = snapshot.data;
         if (user != null && !user.isBlocked) {
+          if (!user.isProfileComplete) {
+            return OnboardingWizardScreen(currentUser: user);
+          }
           return HomeView(currentUser: user);
         }
 

@@ -20,6 +20,7 @@ class UserModel extends UserEntity {
     super.credencialUrl,
     super.institucion,
     super.placaInstitucional,
+    super.isProfileComplete = true,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -47,6 +48,9 @@ class UserModel extends UserEntity {
     final String estadoVerificacion =
         data['estado_verificacion'] as String? ?? defaultEstado;
 
+    final bool isComplete = data['is_profile_complete'] as bool? ??
+        (data['nombre'] != null && data['rut'] != null && data['telefono'] != null);
+
     return UserModel(
       uid: doc.id,
       email: data['email'] as String? ?? '',
@@ -65,6 +69,7 @@ class UserModel extends UserEntity {
       credencialUrl: data['credencial_url'] as String?,
       institucion: data['institucion'] as String?,
       placaInstitucional: data['placa_institucional'] as String?,
+      isProfileComplete: isComplete,
     );
   }
 
@@ -85,6 +90,7 @@ class UserModel extends UserEntity {
       'credencial_url': credencialUrl,
       'institucion': institucion,
       'placa_institucional': placaInstitucional,
+      'is_profile_complete': isProfileComplete,
       'actualizado_en': FieldValue.serverTimestamp(),
     };
 

@@ -26,6 +26,7 @@ import '../../../reportes/presentation/screens/reporte_semanal_screen.dart';
 import '../../../reportes/presentation/widgets/tarjeta_reporte.dart';
 import '../../../emergency/presentation/controllers/emergency_coordinator.dart';
 import '../../../emergency/presentation/widgets/stealth_recording_banner.dart';
+import '../../../network/presentation/screens/red_confianza_screen.dart';
 
 class HomeView extends StatefulWidget {
   final UserEntity currentUser;
@@ -333,6 +334,15 @@ class _HomeViewState extends State<HomeView> {
     if (updated != null && mounted) {
       setState(() => _currentUser = updated);
     }
+  }
+
+  void _abrirRedConfianza() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RedConfianzaScreen(currentUser: _currentUser),
+      ),
+    );
   }
 
   void _abrirReporteSemanal(List<ReporteEntity> reportes) {
@@ -905,6 +915,11 @@ class _HomeViewState extends State<HomeView> {
                             tooltip: 'Reporte Semanal Consolidado',
                             onPressed: () => _abrirReporteSemanal(reportes),
                           ),
+                        IconButton(
+                          icon: const Icon(Icons.people_alt_outlined, color: AppColors.primaryLight),
+                          tooltip: 'Red de Confianza CIVITAS',
+                          onPressed: _abrirRedConfianza,
+                        ),
                         IconButton(
                           icon: const Icon(Icons.info_outline, color: AppColors.textSecondary, size: 20),
                           onPressed: _showMapInfo,

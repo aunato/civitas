@@ -66,4 +66,25 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<List<UserEntity>> getPendingVerificationUsers() async {
     return await remoteDataSource.getPendingVerificationUsers();
   }
+
+  @override
+  Future<UserEntity> completeProfile({
+    required String uid,
+    required String nombre,
+    required String rut,
+    required String telefono,
+    required String ciudad,
+    required String direccion,
+    String? juntaVecinal,
+  }) async {
+    return await remoteDataSource.completeProfile(
+      uid: uid,
+      nombre: nombre,
+      rut: rut,
+      telefono: telefono,
+      ciudad: ciudad,
+      direccion: direccion,
+      juntaVecinal: juntaVecinal,
+    );
+  }
 }

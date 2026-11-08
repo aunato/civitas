@@ -35,4 +35,15 @@ abstract class AuthRepository {
 
   /// Obtener lista de funcionarios en estado PENDING_VERIFICATION
   Future<List<UserEntity>> getPendingVerificationUsers();
+
+  /// Completa el perfil de un usuario nuevo durante el asistente de Onboarding
+  Future<UserEntity> completeProfile({
+    required String uid,
+    required String nombre,
+    required String rut,
+    required String telefono,
+    required String ciudad,
+    required String direccion,
+    String? juntaVecinal,
+  });
 }

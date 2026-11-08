@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/firebase_constants.dart';
 import '../../domain/entities/user_entity.dart';
+import '../../../network/presentation/screens/red_confianza_screen.dart';
+import '../../../network/presentation/widgets/credencial_civitas_badge.dart';
 
 class PerfilUsuarioScreen extends StatefulWidget {
   final UserEntity currentUser;
@@ -289,8 +291,37 @@ class _PerfilUsuarioScreenState extends State<PerfilUsuarioScreen> {
                             : AppColors.warningOrange,
                       ),
                     ),
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.people_alt, color: Colors.white, size: 18),
+                        label: const Text('Gestionar Red de Confianza', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => RedConfianzaScreen(currentUser: widget.currentUser),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
+              ),
+
+              const SizedBox(height: 16),
+              CredencialCivitasBadge(
+                nombre: widget.currentUser.nombre?.isNotEmpty == true ? widget.currentUser.nombre! : 'Usuario CIVITAS',
+                rut: widget.currentUser.rut,
+                rol: widget.currentUser.rol,
+                reputacion: widget.currentUser.reputacion,
+                folio: 'CIVITAS-CL-${widget.currentUser.uid.length >= 6 ? widget.currentUser.uid.substring(0, 6).toUpperCase() : "SEC2026"}',
               ),
 
               const SizedBox(height: 24),

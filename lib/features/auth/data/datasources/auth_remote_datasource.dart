@@ -22,6 +22,15 @@ abstract class AuthRemoteDataSource {
   Future<void> updateFcmToken(String uid, String token);
   Future<void> updateVerificationStatus(String uid, String status);
   Future<List<UserModel>> getPendingVerificationUsers();
+  Future<UserModel> completeProfile({
+    required String uid,
+    required String nombre,
+    required String rut,
+    required String telefono,
+    required String ciudad,
+    required String direccion,
+    String? juntaVecinal,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -210,6 +219,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         credencialUrl: credencialUrl,
         institucion: institucion,
         placaInstitucional: placaInstitucional,
+        isProfileComplete: false, // Forzar Onboarding en primer inicio
       );
 
       await firestore
@@ -242,6 +252,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           credencialUrl: credencialUrl,
           institucion: institucion,
           placaInstitucional: placaInstitucional,
+          isProfileComplete: false,
         );
       }
       throw AuthException(e.message ?? 'Error al registrar usuario');
@@ -256,8 +267,63 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         credencialUrl: credencialUrl,
         institucion: institucion,
         placaInstitucional: placaInstitucional,
+        isProfileComplete: false,
       );
     }
+  }
+
+  @override
+  Future<UserModel> completeProfile({
+    required String uid,
+    required String nombre,
+    required String rut,
+    required String telefono,
+    required String ciudad,
+    required String direccion,
+    String? juntaVecinal,
+  }) async {
+    final updateData = <String, dynamic>{
+      'nombre': nombre,
+      'rut': rut,
+      'telefono': telefono,
+      'ciudad': ciudad,
+      'direccion': direccion,
+      'junta_vecinal': juntaVecinal,
+      'is_profile_complete': true,
+      'actualizado_en': FieldValue.serverTimestamp(),
+    };
+
+    try {
+      await firestore
+          .collection(FirebaseConstants.colUsuarios)
+          .doc(uid)
+          .set(updateData, SetOptions(merge: true));
+
+      final doc = await firestore
+          .collection(FirebaseConstants.colUsuarios)
+          .doc(uid)
+          .get();
+
+      if (doc.exists) {
+        return UserModel.fromFirestore(doc);
+      }
+    } catch (e) {
+      debugPrint('[AuthDataSource] Error en completeProfile: $e');
+    }
+
+    return UserModel(
+      uid: uid,
+      email: '',
+      rol: FirebaseConstants.rolVecino,
+      reputacion: 100,
+      nombre: nombre,
+      rut: rut,
+      telefono: telefono,
+      ciudad: ciudad,
+      direccion: direccion,
+      juntaVecinal: juntaVecinal,
+      isProfileComplete: true,
+    );
   }
 
   @override

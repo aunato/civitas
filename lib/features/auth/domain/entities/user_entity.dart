@@ -19,6 +19,9 @@ class UserEntity {
   final String? institucion; // 'Carabineros de Chile', 'Policía de Investigaciones (PDI)', 'Seguridad Municipal'
   final String? placaInstitucional; // Número de placa oficial del funcionario
 
+  // --- Flujo de Configuración Inicial (Onboarding) y Red de Confianza ---
+  final bool isProfileComplete; // false para nuevos usuarios, true tras completar asistente
+
   const UserEntity({
     required this.uid,
     required this.email,
@@ -37,6 +40,7 @@ class UserEntity {
     this.credencialUrl,
     this.institucion,
     this.placaInstitucional,
+    this.isProfileComplete = true,
   });
 
   /// Regla de negocio de la tesis: Si la reputación baja de 30, la cuenta se bloquea automáticamente.
@@ -76,6 +80,7 @@ class UserEntity {
     String? credencialUrl,
     String? institucion,
     String? placaInstitucional,
+    bool? isProfileComplete,
   }) {
     return UserEntity(
       uid: uid ?? this.uid,
@@ -95,6 +100,7 @@ class UserEntity {
       credencialUrl: credencialUrl ?? this.credencialUrl,
       institucion: institucion ?? this.institucion,
       placaInstitucional: placaInstitucional ?? this.placaInstitucional,
+      isProfileComplete: isProfileComplete ?? this.isProfileComplete,
     );
   }
 }

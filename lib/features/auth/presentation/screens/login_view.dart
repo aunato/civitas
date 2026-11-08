@@ -10,6 +10,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 import '../widgets/auth_text_field.dart';
+import 'onboarding_wizard_screen.dart';
 import '../../../home/presentation/screens/home_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -323,9 +324,15 @@ class _LoginViewState extends State<LoginView> {
         }
       }
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => HomeView(currentUser: user)),
-      );
+      if (!user.isProfileComplete) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => OnboardingWizardScreen(currentUser: user)),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => HomeView(currentUser: user)),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -959,4 +966,29 @@ class _FallbackAuthRepository implements AuthRepository {
 
   @override
   Future<List<UserEntity>> getPendingVerificationUsers() async => [];
+
+  @override
+  Future<UserEntity> completeProfile({
+    required String uid,
+    required String nombre,
+    required String rut,
+    required String telefono,
+    required String ciudad,
+    required String direccion,
+    String? juntaVecinal,
+  }) async {
+    return UserEntity(
+      uid: uid,
+      email: 'vecino@civitas.cl',
+      rol: 'vecino',
+      reputacion: 100,
+      nombre: nombre,
+      rut: rut,
+      telefono: telefono,
+      ciudad: ciudad,
+      direccion: direccion,
+      juntaVecinal: juntaVecinal,
+      isProfileComplete: true,
+    );
+  }
 }

@@ -105,12 +105,12 @@ jobs:
           Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
 
           ---
-          ### Mejoras en esta versión v1.0.4 (Módulo de Seguridad Avanzada y Defensa de Título):
-          * **Flujo de Verificación de Roles Policiales (Carabineros / PDI):** Aprobación de credenciales oficiales con captura fotográfica, número de placa y estado \`PENDING_VERIFICATION\` conforme a protocolos de seguridad.
-          * **Pánico SOS Sigiloso y Grabación de Audio Ambiental:** Grabación silenciosa en segundo plano de hasta 5 minutos ante emergencias críticas y generación de enlace para despacho inmediato vía WhatsApp / Red de Confianza.
-          * **Protocolo Físico Anti-Coacción (Hardware Buttons):** Detección inteligente de 3 pulsaciones en el botón de volumen abajo para cancelación protegida bajo amenaza o activación de modo coacción silenciosa.
-          * **Comandos Remotos Antirrobo (FCM de Alta Prioridad):** Escucha y ejecución en background de directivas de emergencia (\`CMD_FORCE_GPS\` y \`CMD_START_AUDIO_STREAM\`) con Cloud Functions dedicadas.
-          * **Visualización Territorial y Reportes Institucionales:** Agrupamiento dinámico con \`flutter_map_marker_cluster\`, streams reactivos \`.snapshots()\` y exportación formal en PDF.
+          ### Mejoras en esta versión v1.0.5 (Onboarding & Red de Confianza Vecinal):
+          * **Flujo de Configuración Inicial (Onboarding Wizard):** Proceso guiado en 3 pasos para nuevos usuarios (\`isProfileComplete\`), validando identidad comunitaria en Iquique y selección de guardianes vecinales antes de acceder a la cartografía.
+          * **Gestión de Red de Confianza & Libreta Telefónica (\`flutter_contacts\`):** Integración nativa con los contactos del dispositivo para invitar rápidamente a vecinos y familiares a la red de protección.
+          * **Credencial Oficial CIVITAS Digital:** Generación de carnet digital con folio único de seguridad, reputación comunitaria y código de validación para evitar suplantaciones y combatir la cifra negra.
+          * **Sistema Recíproco de Solicitudes de Confianza:** Envío y recepción de credenciales de seguridad con previsualización oficial previa a la aceptación mutua.
+          * **Módulos de Seguridad Avanzada y Defensa de Título v1.0.4:** Verificación institucional Carabineros/PDI, SOS sigiloso con grabación ambiental de 5 min, protocolo anti-coacción por pulsación de volumen y comandos remotos FCM.
 
           ---
           ### Huellas Digitales del Certificado de Firma (Keystore Release)

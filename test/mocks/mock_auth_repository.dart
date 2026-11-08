@@ -92,6 +92,35 @@ class MockAuthRepository implements AuthRepository {
     return [];
   }
 
+  @override
+  Future<UserEntity> completeProfile({
+    required String uid,
+    required String nombre,
+    required String rut,
+    required String telefono,
+    required String ciudad,
+    required String direccion,
+    String? juntaVecinal,
+  }) async {
+    final updated = (_currentUser ?? UserEntity(
+      uid: uid,
+      email: 'vecino@civitas.cl',
+      rol: 'vecino',
+      reputacion: 100,
+    )).copyWith(
+      nombre: nombre,
+      rut: rut,
+      telefono: telefono,
+      ciudad: ciudad,
+      direccion: direccion,
+      juntaVecinal: juntaVecinal,
+      isProfileComplete: true,
+    );
+    _currentUser = updated;
+    emitAuthState(updated);
+    return updated;
+  }
+
   void dispose() {
     _controller.close();
   }
