@@ -3,10 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:civitas/features/auth/domain/entities/user_entity.dart';
 import 'package:civitas/features/auth/domain/usecases/complete_profile_usecase.dart';
 import 'package:civitas/features/auth/presentation/screens/onboarding_wizard_screen.dart';
+import 'package:civitas/features/emergency/data/services/proximity_alert_service.dart';
 import 'package:civitas/features/network/domain/entities/trusted_contact_entity.dart';
 import 'package:civitas/features/network/domain/entities/trust_request_entity.dart';
 import 'package:civitas/features/network/presentation/screens/red_confianza_screen.dart';
 import 'package:civitas/features/network/presentation/widgets/credencial_civitas_badge.dart';
+import 'package:civitas/features/reportes/domain/entities/reporte_entity.dart';
 import 'mocks/mock_auth_repository.dart';
 import 'mocks/mock_network_repository.dart';
 
@@ -185,7 +187,7 @@ void main() {
       expect(find.text('Carlos Salgado (Dirigente)'), findsOneWidget);
     });
 
-    testWidgets('Pestaña de Contactos telefónicos permite invitar', (tester) async {
+    testWidgets('Pestaña de Contactos telefónicos muestra filtro WhatsApp: Agregar a Red e Invitar', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -204,14 +206,175 @@ void main() {
       await tester.tap(find.text('Contactos'));
       await tester.pumpAndSettle();
 
+      // Don Carlos está registrado en CIVITAS -> Muestra badge y botón Agregar a Red
       expect(find.text('Don Carlos (Vecino Pasaje A)'), findsOneWidget);
-      expect(find.text('Invitar'), findsWidgets);
+      expect(find.text('En CIVITAS'), findsWidgets);
+      expect(find.text('Agregar a Red'), findsWidgets);
 
-      // Tap en Invitar
-      await tester.tap(find.text('Invitar').first);
+      // Tap en Agregar a Red para Don Carlos envía la solicitud con credencial
+      await tester.tap(find.text('Agregar a Red').first);
       await tester.pumpAndSettle();
 
       expect(mockNetwork.pendingRequests.isNotEmpty, isTrue);
+
+      // Pedro Amigo no está registrado en CIVITAS -> Muestra Invitar
+      expect(find.text('Pedro Amigo (Sin CIVITAS)'), findsOneWidget);
+      final inviteBtn = find.widgetWithText(OutlinedButton, 'Invitar');
+      expect(inviteBtn, findsOneWidget);
+
+      // Tap en Invitar abre diálogo con enlace de descarga para compartir
+      await tester.tap(inviteBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invitar a CIVITAS'), findsOneWidget);
+      expect(find.text('Copiar Enlace'), findsOneWidget);
+
+      await tester.tap(find.text('Cerrar'));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('Eliminación instantánea de contacto de confianza (optimistic UI)', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      mockNetwork.trustedContacts.add(
+        TrustedContactEntity(
+          id: 'contact_para_borrar',
+          name: 'Vecino a Eliminar',
+          phone: '+56900001111',
+          relationship: 'Vecino de Confianza',
+          isVerified: true,
+          addedAt: DateTime(2026, 11, 8),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RedConfianzaScreen(
+            currentUser: testUser,
+            networkRepository: mockNetwork,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Vecino a Eliminar'), findsOneWidget);
+
+      // Tap en el botón de eliminar del contacto
+      final deleteBtns = find.byIcon(Icons.delete_outline);
+      expect(deleteBtns, findsWidgets);
+      await tester.tap(deleteBtns.first);
+      await tester.pump();
+
+      // Debe desaparecer inmediatamente de la interfaz
+      expect(find.text('Vecino a Eliminar'), findsNothing);
+    });
+  });
+
+  group('ProximityAlertService (Geofencing & Alertas en Tiempo Real)', () {
+    late ProximityAlertService service;
+
+    setUp(() {
+      service = ProximityAlertService();
+      service.reset();
+    });
+
+    test('Dispara evento cuando el reporte se encuentra a menos de 500m del usuario', () {
+      final reportes = [
+        ReporteEntity(
+          idReporte: 'sos_cercano_1',
+          autorRef: 'vecino_vecino_99',
+          tipo: 'boton_panico',
+          latitud: -20.2170, // ~35 metros de distancia
+          longitud: -70.1420,
+          geohash: '6e5g1',
+          estado: 'ACTIVO',
+          contadorValidaciones: 1,
+          timestamp: DateTime.now(),
+        ),
+        ReporteEntity(
+          idReporte: 'sos_lejano_2',
+          autorRef: 'vecino_vecino_98',
+          tipo: 'boton_panico',
+          latitud: -20.2400, // ~2.5 km de distancia (> 500m)
+          longitud: -70.1417,
+          geohash: '6e5g2',
+          estado: 'ACTIVO',
+          contadorValidaciones: 1,
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      final events = service.evaluateAlertsProximity(
+        userLat: -20.2167,
+        userLng: -70.1417,
+        reportes: reportes,
+        currentUserId: 'mi_usuario_actual',
+      );
+
+      expect(events.length, equals(1));
+      expect(events.first.reporte.idReporte, equals('sos_cercano_1'));
+      expect(events.first.distanceMeters, lessThan(500.0));
+    });
+
+    test('Ignora reportes emitidos por el propio usuario (evita auto-alertas)', () {
+      final reportes = [
+        ReporteEntity(
+          idReporte: 'mi_propio_sos',
+          autorRef: 'mi_usuario_actual',
+          tipo: 'boton_panico',
+          latitud: -20.2168,
+          longitud: -70.1418,
+          geohash: '6e5g1',
+          estado: 'ACTIVO',
+          contadorValidaciones: 0,
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      final events = service.evaluateAlertsProximity(
+        userLat: -20.2167,
+        userLng: -70.1417,
+        reportes: reportes,
+        currentUserId: 'mi_usuario_actual',
+      );
+
+      expect(events, isEmpty);
+    });
+
+    test('No duplica alertas ya notificadas en la misma zona', () {
+      final reportes = [
+        ReporteEntity(
+          idReporte: 'sos_cercano_repetido',
+          autorRef: 'vecino_vecino_99',
+          tipo: 'boton_panico',
+          latitud: -20.2170,
+          longitud: -70.1420,
+          geohash: '6e5g1',
+          estado: 'ACTIVO',
+          contadorValidaciones: 1,
+          timestamp: DateTime.now(),
+        ),
+      ];
+
+      final firstEval = service.evaluateAlertsProximity(
+        userLat: -20.2167,
+        userLng: -70.1417,
+        reportes: reportes,
+        currentUserId: 'mi_usuario_actual',
+      );
+      expect(firstEval.length, equals(1));
+
+      // Segunda evaluación con el mismo reporte
+      final secondEval = service.evaluateAlertsProximity(
+        userLat: -20.2167,
+        userLng: -70.1417,
+        reportes: reportes,
+        currentUserId: 'mi_usuario_actual',
+      );
+      expect(secondEval, isEmpty);
     });
   });
 

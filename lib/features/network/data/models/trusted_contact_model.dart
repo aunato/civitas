@@ -9,6 +9,7 @@ class TrustedContactModel extends TrustedContactEntity {
     super.email,
     super.civitasUid,
     super.isVerified = false,
+    super.isRegisteredInCivitas = false,
     super.relationship = 'Vecino de Confianza',
     required super.addedAt,
   });
@@ -21,6 +22,7 @@ class TrustedContactModel extends TrustedContactEntity {
       email: entity.email,
       civitasUid: entity.civitasUid,
       isVerified: entity.isVerified,
+      isRegisteredInCivitas: entity.isRegisteredInCivitas,
       relationship: entity.relationship,
       addedAt: entity.addedAt,
     );
@@ -46,6 +48,7 @@ class TrustedContactModel extends TrustedContactEntity {
       email: map['email'] ?? map['correo'],
       civitasUid: map['civitas_uid'] ?? map['uid'],
       isVerified: map['is_verified'] ?? map['verificado'] ?? false,
+      isRegisteredInCivitas: map['is_registered'] ?? (map['civitas_uid'] != null),
       relationship: map['relationship'] ?? map['parentesco'] ?? 'Vecino de Confianza',
       addedAt: parsedAddedAt,
     );
@@ -59,6 +62,7 @@ class TrustedContactModel extends TrustedContactEntity {
       'email': email,
       'civitas_uid': civitasUid,
       'is_verified': isVerified,
+      'is_registered': isRegisteredInCivitas,
       'relationship': relationship,
       'added_at': Timestamp.fromDate(addedAt),
     };

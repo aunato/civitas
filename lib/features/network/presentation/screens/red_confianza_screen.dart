@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../data/datasources/contacts_device_datasource.dart';
@@ -27,6 +29,7 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
     with SingleTickerProviderStateMixin {
   late final NetworkRepository _repository;
   late final TabController _tabController;
+  StreamSubscription<List<TrustRequestEntity>>? _requestsSubscription;
 
   bool _isLoading = true;
   List<TrustedContactEntity> _trustedContacts = [];
@@ -45,10 +48,30 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
         );
 
     _loadAllData();
+    _initRequestsStream();
+  }
+
+  void _initRequestsStream() {
+    final phone = widget.currentUser.telefono ?? '';
+    if (phone.isNotEmpty) {
+      _requestsSubscription = _repository.streamPendingTrustRequests(phone).listen(
+        (requests) {
+          if (mounted) {
+            setState(() {
+              _pendingRequests = requests;
+            });
+          }
+        },
+        onError: (e) {
+          debugPrint('Error en stream de solicitudes: $e');
+        },
+      );
+    }
   }
 
   @override
   void dispose() {
+    _requestsSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -58,7 +81,8 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
     try {
       final contacts = await _repository.getTrustedContacts(widget.currentUser.uid);
       final requests = await _repository.getPendingTrustRequests(widget.currentUser.telefono ?? '');
-      final device = await _repository.getDevicePhoneContacts();
+      final rawDevice = await _repository.getDevicePhoneContacts();
+      final device = await _repository.checkRegisteredUsers(rawDevice);
 
       if (mounted) {
         setState(() {
@@ -148,6 +172,7 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
             backgroundColor: AppColors.primary,
           ),
         );
+        _loadAllData();
       }
     } catch (e) {
       if (mounted) {
@@ -158,26 +183,96 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
     }
   }
 
+  void _handleShareAppInvite(TrustedContactEntity contact) {
+    const inviteMessage =
+        '¡Hola! Te invito a unirte a CIVITAS, la plataforma comunitaria de seguridad y alerta temprana. Descarga la app y únete a nuestra red vecinal aquí: https://github.com/aunato/civitas/releases/latest';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.share, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('Invitar a CIVITAS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Invita a ${contact.name} (${contact.phone}) a instalar la app para proteger juntos el vecindario:',
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: const Text(
+                inviteMessage,
+                style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cerrar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Clipboard.setData(const ClipboardData(text: inviteMessage));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Enlace de invitación para ${contact.name} copiado al portapapeles.'),
+                  backgroundColor: AppColors.successGreen,
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 16, color: Colors.white),
+            label: const Text('Copiar Enlace', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleRemoveContact(TrustedContactEntity contact) async {
+    // 1. Eliminación instantánea en la interfaz (optimistic UI)
+    setState(() {
+      _trustedContacts.removeWhere((c) => c.id == contact.id || c.phone == contact.phone);
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${contact.name} eliminado de la red de confianza.'),
+          backgroundColor: AppColors.warningOrange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
     try {
       await _repository.removeTrustedContact(
         userUid: widget.currentUser.uid,
         contactId: contact.id,
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${contact.name} eliminado de la red de confianza.'),
-            backgroundColor: AppColors.warningOrange,
-          ),
-        );
-        _loadAllData();
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al eliminar contacto: $e'), backgroundColor: AppColors.panicRed),
         );
+        _loadAllData();
       }
     }
   }
@@ -413,7 +508,9 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
   }
 
   Widget _buildTrustedContactsTab() {
-    if (_trustedContacts.isEmpty) {
+    final hasRequests = _pendingRequests.isNotEmpty;
+
+    if (_trustedContacts.isEmpty && !hasRequests) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -448,9 +545,47 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: _trustedContacts.length,
+      itemCount: _trustedContacts.length + (hasRequests ? 1 : 0),
       itemBuilder: (context, index) {
-        final contact = _trustedContacts[index];
+        if (hasRequests && index == 0) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              border: Border.all(color: Colors.amber.shade600, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.mark_email_unread_rounded, color: Colors.amber, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${_pendingRequests.length} Solicitud(es) de Confianza',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primaryDark),
+                      ),
+                      const Text(
+                        'Vecinos esperando vincular sus credenciales de seguridad.',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _tabController.animateTo(1),
+                  child: const Text('Revisar', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final contactIndex = hasRequests ? index - 1 : index;
+        final contact = _trustedContacts[contactIndex];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -624,6 +759,14 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
           c.phone.contains(_searchFilter);
     }).toList();
 
+    // Priorizar contactos que ya tienen cuenta CIVITAS (estilo WhatsApp)
+    filteredContacts.sort((a, b) {
+      if (a.isRegisteredInCivitas == b.isRegisteredInCivitas) {
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      }
+      return a.isRegisteredInCivitas ? -1 : 1;
+    });
+
     return Column(
       children: [
         Padding(
@@ -674,30 +817,82 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.primary.withAlpha(40),
+                          backgroundColor: contact.isRegisteredInCivitas
+                              ? AppColors.primary
+                              : AppColors.primary.withAlpha(40),
                           child: Text(
                             contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: contact.isRegisteredInCivitas ? Colors.white : AppColors.primary,
+                            ),
                           ),
                         ),
-                        title: Text(contact.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                contact.name,
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            if (contact.isRegisteredInCivitas)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.successGreen.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified, size: 12, color: AppColors.successGreen),
+                                    SizedBox(width: 2),
+                                    Text(
+                                      'En CIVITAS',
+                                      style: TextStyle(
+                                        color: AppColors.successGreen,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
                         subtitle: Text(contact.phone, style: const TextStyle(fontSize: 12)),
                         trailing: alreadyInNetwork
                             ? const Chip(
-                                label: Text('En tu Red', style: TextStyle(fontSize: 10, color: AppColors.successGreen)),
+                                label: Text(
+                                  'En tu Red',
+                                  style: TextStyle(fontSize: 10, color: AppColors.successGreen),
+                                ),
                                 backgroundColor: Color(0xFFE8F5E9),
                               )
-                            : ElevatedButton(
-                                onPressed: () => _handleSendRequest(contact.phone, contact.name),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  minimumSize: Size.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
-                                child: const Text('Invitar', style: TextStyle(fontSize: 12)),
-                              ),
+                            : contact.isRegisteredInCivitas
+                                ? ElevatedButton.icon(
+                                    onPressed: () => _handleSendRequest(contact.phone, contact.name),
+                                    icon: const Icon(Icons.person_add, size: 14, color: Colors.white),
+                                    label: const Text('Agregar a Red', style: TextStyle(fontSize: 11, color: Colors.white)),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  )
+                                : OutlinedButton.icon(
+                                    onPressed: () => _handleShareAppInvite(contact),
+                                    icon: const Icon(Icons.share, size: 14, color: AppColors.primary),
+                                    label: const Text('Invitar', style: TextStyle(fontSize: 11, color: AppColors.primary)),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(color: AppColors.primary),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
                       ),
                     );
                   },
@@ -706,4 +901,5 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
       ],
     );
   }
+}
 }

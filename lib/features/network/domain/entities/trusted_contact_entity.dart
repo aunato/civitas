@@ -6,6 +6,7 @@ class TrustedContactEntity {
   final String? email;
   final String? civitasUid;
   final bool isVerified;
+  final bool isRegisteredInCivitas; // Indica si el contacto ya está registrado en la base de usuarios CIVITAS
   final String relationship; // 'Familiar', 'Vecino de Confianza', 'Comité de Seguridad'
   final DateTime addedAt;
 
@@ -16,6 +17,7 @@ class TrustedContactEntity {
     this.email,
     this.civitasUid,
     this.isVerified = false,
+    this.isRegisteredInCivitas = false,
     this.relationship = 'Vecino de Confianza',
     required this.addedAt,
   });
@@ -27,6 +29,7 @@ class TrustedContactEntity {
     String? email,
     String? civitasUid,
     bool? isVerified,
+    bool? isRegisteredInCivitas,
     String? relationship,
     DateTime? addedAt,
   }) {
@@ -37,6 +40,7 @@ class TrustedContactEntity {
       email: email ?? this.email,
       civitasUid: civitasUid ?? this.civitasUid,
       isVerified: isVerified ?? this.isVerified,
+      isRegisteredInCivitas: isRegisteredInCivitas ?? this.isRegisteredInCivitas,
       relationship: relationship ?? this.relationship,
       addedAt: addedAt ?? this.addedAt,
     );

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -142,6 +143,9 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         juntaVecinal: _juntaVecinalController.text.trim().isNotEmpty
             ? _juntaVecinalController.text.trim()
             : null,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('Tiempo de espera agotado al guardar perfil y credencial.'),
       );
 
       // 2. Guardar contactos de confianza seleccionados
@@ -189,6 +193,10 @@ class _OnboardingWizardScreenState extends State<OnboardingWizardScreen> {
         _isLoading = false;
         _errorMessage = 'Error al finalizar configuración: $e';
       });
+    } finally {
+      if (mounted && _isLoading && _errorMessage != null) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

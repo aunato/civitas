@@ -199,10 +199,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     final estadoInicial = isInstitucional ? 'PENDING_VERIFICATION' : 'VERIFICADO';
 
     try {
-      final credential = await firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final credential = await firebaseAuth
+          .createUserWithEmailAndPassword(
+            email: email,
+            password: password,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw AuthException(
+              'Tiempo de espera agotado al conectar con el servicio de autenticación.',
+            ),
+          );
 
       final user = credential.user;
       if (user == null) {
@@ -225,7 +232,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await firestore
           .collection(FirebaseConstants.colUsuarios)
           .doc(user.uid)
-          .set(newUser.toFirestore());
+          .set(newUser.toFirestore())
+          .timeout(
+            const Duration(seconds: 8),
+            onTimeout: () {
+              debugPrint('[AuthRemoteDataSource] Timeout al guardar en Firestore (modo offline activo).');
+            },
+          );
 
       return newUser;
     } on FirebaseAuthException catch (e) {
@@ -297,12 +310,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await firestore
           .collection(FirebaseConstants.colUsuarios)
           .doc(uid)
-          .set(updateData, SetOptions(merge: true));
+          .set(updateData, SetOptions(merge: true))
+          .timeout(
+            const Duration(seconds: 6),
+            onTimeout: () {
+              debugPrint('[AuthDataSource] Timeout en set completeProfile (modo offline activo).');
+            },
+          );
 
       final doc = await firestore
           .collection(FirebaseConstants.colUsuarios)
           .doc(uid)
-          .get();
+          .get()
+          .timeout(
+            const Duration(seconds: 4),
+            onTimeout: () => throw TimeoutException('Tiempo de espera agotado al consultar perfil.'),
+          );
 
       if (doc.exists) {
         return UserModel.fromFirestore(doc);
@@ -332,7 +355,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await firestore.collection(FirebaseConstants.colUsuarios).doc(uid).set({
         'estado_verificacion': status,
         'fecha_verificacion': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      }, SetOptions(merge: true)).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () {
+          debugPrint('[AuthRemoteDataSource] Timeout al actualizar estado de verificación.');
+        },
+      );
     } catch (e) {
       debugPrint('[AuthRemoteDataSource] Error actualizando verificación: $e');
     }

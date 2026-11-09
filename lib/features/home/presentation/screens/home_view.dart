@@ -24,6 +24,7 @@ import '../../../reportes/domain/usecases/validar_reporte_usecase.dart';
 import '../../../reportes/presentation/screens/crear_reporte_screen.dart';
 import '../../../reportes/presentation/screens/reporte_semanal_screen.dart';
 import '../../../reportes/presentation/widgets/tarjeta_reporte.dart';
+import '../../../emergency/data/services/proximity_alert_service.dart';
 import '../../../emergency/presentation/controllers/emergency_coordinator.dart';
 import '../../../emergency/presentation/widgets/stealth_recording_banner.dart';
 import '../../../network/presentation/screens/red_confianza_screen.dart';
@@ -73,6 +74,7 @@ class _HomeViewState extends State<HomeView> {
   StreamSubscription<List<ReporteEntity>>? _reportesSubscription;
   StreamSubscription? _fcmSubscription;
   final Set<String> _knownReportIds = {};
+  List<ReporteEntity> _lastReportes = [];
   bool _isInitialReportLoad = true;
 
   // Contador dinámico temporal del perímetro
@@ -194,7 +196,57 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _checkNewProximityAlerts(List<ReporteEntity> reportes) {
+    _lastReportes = reportes;
     final center = _currentLatLng ?? _defaultLocation;
+
+    // Evaluación en tiempo real de proximidad usando algoritmo Haversine (Radio 500m)
+    final events = ProximityAlertService().evaluateAlertsProximity(
+      userLat: center.latitude,
+      userLng: center.longitude,
+      reportes: reportes,
+      currentUserId: _currentUser.uid,
+    );
+
+    for (final event in events) {
+      final r = event.reporte;
+      final dist = event.distanceMeters.toStringAsFixed(0);
+      final tipoLabel = r.tipo == FirebaseConstants.tipoBotonPanico
+          ? 'Botón de Pánico SOS'
+          : r.tipo.replaceAll('_', ' ').toUpperCase();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: r.tipo == FirebaseConstants.tipoBotonPanico
+              ? AppColors.panicRed
+              : AppColors.primaryDark,
+          duration: const Duration(seconds: 5),
+          content: Row(
+            children: [
+              Icon(
+                r.tipo == FirebaseConstants.tipoBotonPanico
+                    ? Icons.emergency
+                    : Icons.warning_rounded,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '¡Alerta de Proximidad! $tipoLabel a ${dist}m de tu ubicación.',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          action: SnackBarAction(
+            label: 'Centrar',
+            textColor: Colors.white,
+            onPressed: () {
+              _mapController.move(LatLng(r.latitud, r.longitud), 17.5);
+            },
+          ),
+        ),
+      );
+    }
+
     final alertasEnZona = reportes.where((rep) {
       return LocationService.isWithinAlertRadius(
         userLat: center.latitude,
@@ -216,60 +268,7 @@ class _HomeViewState extends State<HomeView> {
       return;
     }
 
-    bool hayNuevos = false;
-    for (final r in reportes) {
-      if (!_knownReportIds.contains(r.idReporte)) {
-        _knownReportIds.add(r.idReporte);
-        hayNuevos = true;
-
-        if (r.autorRef != _currentUser.uid) {
-          final enRadio = LocationService.isWithinAlertRadius(
-            userLat: center.latitude,
-            userLng: center.longitude,
-            alertLat: r.latitud,
-            alertLng: r.longitud,
-            radiusMeters: 500,
-          );
-
-          if (enRadio) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                backgroundColor: r.tipo == FirebaseConstants.tipoBotonPanico
-                    ? AppColors.panicRed
-                    : AppColors.primaryDark,
-                duration: const Duration(seconds: 5),
-                content: Row(
-                  children: [
-                    Icon(
-                      r.tipo == FirebaseConstants.tipoBotonPanico
-                          ? Icons.emergency
-                          : Icons.warning_rounded,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        '¡Alerta de Proximidad! Nuevo reporte a menos de 500m.',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                action: SnackBarAction(
-                  label: 'Centrar',
-                  textColor: Colors.white,
-                  onPressed: () {
-                    _mapController.move(LatLng(r.latitud, r.longitud), 17.5);
-                  },
-                ),
-              ),
-            );
-          }
-        }
-      }
-    }
-
-    if (hayNuevos && alertasEnZona.isNotEmpty) {
+    if (events.isNotEmpty && alertasEnZona.isNotEmpty) {
       _activarBadgePerimetroTemporal(alertasEnZona.length);
     }
   }
@@ -530,6 +529,11 @@ class _HomeViewState extends State<HomeView> {
         latitude: latLng.latitude,
         longitude: latLng.longitude,
       );
+
+      // 5. Evalúa de inmediato si la nueva posición del usuario ingresó a una zona de alerta (< 500m)
+      if (_lastReportes.isNotEmpty) {
+        _checkNewProximityAlerts(_lastReportes);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

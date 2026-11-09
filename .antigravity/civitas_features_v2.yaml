@@ -1,11 +1,23 @@
 ﻿project: "CIVITAS"
-module: "Onboarding & Trusted Social Network"
+module: "Core Bugfixes & Social Security Features"
 target_defense_date: "2026-11-10"
 instructions:
-  - task: "First-Time User Onboarding Flow"
+  - task: "Fix Credential Infinite Loading"
     scope: "lib/features/auth/"
-    details: "Implement an onboarding wizard for new users checking 'isProfileComplete' in Firestore, forcing profile setup and initial trusted contacts selection on first login."
+    details: "Add proper try-catch, timeouts, and exception handling during credential upload and Firestore profile status update to prevent infinite loading state."
 
-  - task: "Trusted Network & Phone Contacts Integration"
+  - task: "Fix Trusted Contact Deletion"
     scope: "lib/features/network/"
-    details: "Integrate package:flutter_contacts to select trusted users by phone number. Implement friend/trust request system showing user name and CIVITAS security credential/badge upon request acceptance."
+    details: "Use FieldValue.arrayRemove() correctly in Firestore to ensure trusted contact deletion works instantly when tapping the trash icon."
+
+  - task: "Trusted Network Requests & Badges"
+    scope: "lib/features/network/"
+    details: "Implement invitation requests collection so receiver gets a notification card showing the requester's CIVITAS credential badge and accept/reject options."
+
+  - task: "Real-time Geofence Alerts"
+    scope: "lib/features/emergency/"
+    details: "Ensure local Haversine distance calculation on active Firestore streams triggers local high-priority notifications when a user enters a 500m alert radius."
+
+  - task: "WhatsApp-style Contacts Filter & Invite"
+    scope: "lib/features/network/"
+    details: "Cross phone contacts with Firestore users. Show 'Add to Trust' for registered users and 'Invite' (sharing app link) for unregistered ones."

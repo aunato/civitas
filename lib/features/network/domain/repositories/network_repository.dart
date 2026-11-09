@@ -21,6 +21,9 @@ abstract class NetworkRepository {
   /// Obtiene las solicitudes de confianza pendientes dirigidas al número de teléfono del usuario
   Future<List<TrustRequestEntity>> getPendingTrustRequests(String userPhone);
 
+  /// Stream en tiempo real de solicitudes de confianza pendientes
+  Stream<List<TrustRequestEntity>> streamPendingTrustRequests(String userPhone);
+
   /// Envía una solicitud de confianza vecinal con la credencial de CIVITAS del usuario
   Future<TrustRequestEntity> sendTrustRequest({
     required UserEntity fromUser,
@@ -36,6 +39,9 @@ abstract class NetworkRepository {
 
   /// Lee los contactos del dispositivo móvil usando la libreta de direcciones
   Future<List<TrustedContactEntity>> getDevicePhoneContacts();
+
+  /// Cruza contactos telefónicos con usuarios registrados en Firestore (Estilo WhatsApp)
+  Future<List<TrustedContactEntity>> checkRegisteredUsers(List<TrustedContactEntity> contacts);
 
   /// Solicita permisos para acceder a la libreta de contactos
   Future<bool> requestContactsPermission();

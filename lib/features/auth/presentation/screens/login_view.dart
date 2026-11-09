@@ -287,11 +287,21 @@ class _LoginViewState extends State<LoginView> {
           credencialUrl: isInst
               ? (_credencialPhotoName ?? 'credencial_oficial_${DateTime.now().millisecondsSinceEpoch}.jpg')
               : null,
+        ).timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw AuthException(
+            'Tiempo de espera agotado al registrar credencial y cuenta. Intente nuevamente.',
+          ),
         );
       } else {
         user = await _loginUseCase.call(
           email: _emailController.text.trim(),
           password: _passwordController.text,
+        ).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => throw AuthException(
+            'Tiempo de espera agotado al iniciar sesión. Intente nuevamente.',
+          ),
         );
       }
 
@@ -343,6 +353,10 @@ class _LoginViewState extends State<LoginView> {
         }
         _isLoading = false;
       });
+    } finally {
+      if (mounted && _isLoading) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

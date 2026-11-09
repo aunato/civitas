@@ -23,6 +23,14 @@ class MockNetworkRepository implements NetworkRepository {
       isVerified: true,
       addedAt: DateTime(2026, 11, 8),
     ),
+    TrustedContactEntity(
+      id: 'mock_dev_3',
+      name: 'Pedro Amigo (Sin CIVITAS)',
+      phone: '+56955443322',
+      relationship: 'Amigo',
+      isVerified: false,
+      addedAt: DateTime(2026, 11, 8),
+    ),
   ];
 
   @override
@@ -50,6 +58,11 @@ class MockNetworkRepository implements NetworkRepository {
   @override
   Future<List<TrustRequestEntity>> getPendingTrustRequests(String userPhone) async {
     return pendingRequests.where((r) => r.isPending).toList();
+  }
+
+  @override
+  Stream<List<TrustRequestEntity>> streamPendingTrustRequests(String userPhone) {
+    return Stream.value(pendingRequests.where((r) => r.isPending).toList());
   }
 
   @override
@@ -108,6 +121,17 @@ class MockNetworkRepository implements NetworkRepository {
   @override
   Future<List<TrustedContactEntity>> getDevicePhoneContacts() async {
     return List.from(deviceContacts);
+  }
+
+  @override
+  Future<List<TrustedContactEntity>> checkRegisteredUsers(List<TrustedContactEntity> contacts) async {
+    return contacts.map((c) {
+      final isRegistered = c.id == 'mock_dev_1' || c.phone.contains('12345678') || c.isVerified;
+      return c.copyWith(
+        isRegisteredInCivitas: isRegistered,
+        civitasUid: isRegistered ? 'mock_user_${c.id}' : null,
+      );
+    }).toList();
   }
 
   @override

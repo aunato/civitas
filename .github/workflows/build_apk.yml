@@ -105,12 +105,13 @@ jobs:
           Abre el archivo \`app-release.apk\` en tu teléfono Android para instalar o actualizar la aplicación.
 
           ---
-          ### Mejoras en esta versión v1.0.5 (Onboarding & Red de Confianza Vecinal):
-          * **Flujo de Configuración Inicial (Onboarding Wizard):** Proceso guiado en 3 pasos para nuevos usuarios (\`isProfileComplete\`), validando identidad comunitaria en Iquique y selección de guardianes vecinales antes de acceder a la cartografía.
-          * **Gestión de Red de Confianza & Libreta Telefónica (\`flutter_contacts\`):** Integración nativa con los contactos del dispositivo para invitar rápidamente a vecinos y familiares a la red de protección.
-          * **Credencial Oficial CIVITAS Digital:** Generación de carnet digital con folio único de seguridad, reputación comunitaria y código de validación para evitar suplantaciones y combatir la cifra negra.
-          * **Sistema Recíproco de Solicitudes de Confianza:** Envío y recepción de credenciales de seguridad con previsualización oficial previa a la aceptación mutua.
-          * **Módulos de Seguridad Avanzada y Defensa de Título v1.0.4:** Verificación institucional Carabineros/PDI, SOS sigiloso con grabación ambiental de 5 min, protocolo anti-coacción por pulsación de volumen y comandos remotos FCM.
+          ### Mejoras en esta versión v1.0.6 (Correcciones Críticas & Red Social de Confianza):
+          * **Eliminación de Bucle Infinito de Credenciales:** Manejo de excepciones robusto con timeouts de 8-12s y bloques \`finally\` garantizados para evitar bloqueos de carga indefinida durante el registro, inicio de sesión y onboarding.
+          * **Eliminación Atómica de Contactos de Confianza:** Actualización instantánea en la interfaz (optimistic UI) y eliminación en Firestore mediante \`FieldValue.arrayRemove()\` y borrado de subcolección.
+          * **Solicitudes de Confianza en Tiempo Real con Credencial:** Transmisión reactiva mediante streams (\`solicitudes_confianza\`), tarjeta de notificación con credencial digital CIVITAS oficial del emisor y opciones de Aceptar/Rechazar.
+          * **Alertas por Proximidad en Tiempo Real (Geofencing 500m):** Motor local con fórmula de Haversine sobre el flujo de incidentes de Firestore para disparar notificaciones y vibración háptica de alta prioridad dentro de un radio de 500m.
+          * **Filtro de Contactos Estilo WhatsApp e Invitaciones Comunitarias:** Cruce automático de contactos telefónicos con la base de datos de usuarios de CIVITAS; despliegue de badge 'En CIVITAS' con botón 'Agregar a Red' para registrados y botón 'Invitar' con enlace de descarga para nuevos vecinos.
+          * **Módulos de Seguridad Avanzada Previo a Defensa v1.0.5/v1.0.4:** Verificación institucional, grabación ambiental SOS sigilosa, código coacción por volumen y clustering en mapa OpenStreetMap.
 
           ---
           ### Huellas Digitales del Certificado de Firma (Keystore Release)

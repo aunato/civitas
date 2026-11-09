@@ -44,6 +44,11 @@ class NetworkRepositoryImpl implements NetworkRepository {
   }
 
   @override
+  Stream<List<TrustRequestEntity>> streamPendingTrustRequests(String userPhone) {
+    return remoteDataSource.streamPendingTrustRequests(userPhone);
+  }
+
+  @override
   Future<TrustRequestEntity> sendTrustRequest({
     required UserEntity fromUser,
     required String toPhone,
@@ -82,6 +87,11 @@ class NetworkRepositoryImpl implements NetworkRepository {
   @override
   Future<List<TrustedContactEntity>> getDevicePhoneContacts() async {
     return await deviceDataSource.getPhoneContacts();
+  }
+
+  @override
+  Future<List<TrustedContactEntity>> checkRegisteredUsers(List<TrustedContactEntity> contacts) async {
+    return await remoteDataSource.checkRegisteredUsers(contacts);
   }
 
   @override
