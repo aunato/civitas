@@ -54,6 +54,31 @@ class TrustedContactModel extends TrustedContactEntity {
     );
   }
 
+  @override
+  TrustedContactModel copyWith({
+    String? id,
+    String? name,
+    String? phone,
+    String? email,
+    String? civitasUid,
+    bool? isVerified,
+    bool? isRegisteredInCivitas,
+    String? relationship,
+    DateTime? addedAt,
+  }) {
+    return TrustedContactModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      civitasUid: civitasUid ?? this.civitasUid,
+      isVerified: isVerified ?? this.isVerified,
+      isRegisteredInCivitas: isRegisteredInCivitas ?? this.isRegisteredInCivitas,
+      relationship: relationship ?? this.relationship,
+      addedAt: addedAt ?? this.addedAt,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

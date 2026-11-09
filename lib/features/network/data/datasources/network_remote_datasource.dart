@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:civitas/features/auth/domain/entities/user_entity.dart';
+import '../../domain/entities/trusted_contact_entity.dart';
 import '../models/trusted_contact_model.dart';
 import '../models/trust_request_model.dart';
 
@@ -141,6 +142,12 @@ class NetworkRemoteDataSourceImpl implements NetworkRemoteDataSource {
           .toList();
     } catch (e) {
       debugPrint('[NetworkRemoteDataSource] getPendingTrustRequests fallback: $e');
+      return _inMemoryRequests
+          .where((r) => (r.toPhone == cleanPhone || r.toPhone == userPhone) && r.isPending)
+          .toList();
+    }
+  }
+
   @override
   Stream<List<TrustRequestModel>> streamPendingTrustRequests(String userPhone) {
     final cleanPhone = userPhone.replaceAll(' ', '').replaceAll('-', '');

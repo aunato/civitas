@@ -902,4 +902,3 @@ class _RedConfianzaScreenState extends State<RedConfianzaScreen>
     );
   }
 }
-}
